@@ -624,7 +624,6 @@
             totalTime: state.time,
             steps: state.steps,
             finalBuildings: cloneObj(state.buildings),
-            scenario: scenario,
         };
     }
 

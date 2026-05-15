@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         SpeckMichs Die Stämme Tool Collection
-// @namespace    https://github.com/EmoteBot6
-// @version      3.4.0
+// @namespace    https://github.com/TurkishMagikarp
+// @version      3.5.0
 // @description  Erweitert die Die Stämme Erfahrung mit einigen Tools und Skripten
-// @author       SpeckMich
+// @author       TurkishMagikarp (Original: SpeckMich)
 // @connect      raw.githubusercontent.com
 // @connect      localhost
 // @connect      cdn.jsdelivr.net
@@ -12,8 +12,8 @@
 // @match        https://*ds-ultimate.de/tools/attackPlanner/*
 // @match        https://twforge.net/worlds/*/planner/plans/*
 // @icon         https://pbs.twimg.com/profile_images/1456997417807716357/oX-R0v9l_400x400.png
-// @updateURL    https://raw.githubusercontent.com/EmoteBot6/DieStaemmeScripts/master/main.user.js
-// @downloadURL  https://raw.githubusercontent.com/EmoteBot6/DieStaemmeScripts/master/main.user.js
+// @updateURL    https://raw.githubusercontent.com/TurkishMagikarp/DieStaemmeScripts/develop/main.user.js
+// @downloadURL  https://raw.githubusercontent.com/TurkishMagikarp/DieStaemmeScripts/develop/main.user.js
 // @grant        GM_xmlhttpRequest
 // @grant        GM.setValue
 // @grant        GM.getValue
@@ -391,7 +391,7 @@
   const ENV_KEY = "dsToolsEnv";
   const DEFAULT_ENV = "prod";
   const MANIFEST_URLS = {
-    prod: "https://raw.githubusercontent.com/EmoteBot6/DieStaemmeScripts/master/config/manifest.prod.json",
+    prod: "https://raw.githubusercontent.com/TurkishMagikarp/DieStaemmeScripts/develop/config/manifest.prod.json",
     dev: "http://localhost:8123/config/manifest.dev.json",
   };
 

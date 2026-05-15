@@ -43,15 +43,15 @@
     links: [
       {
         label: "GitHub",
-        href: "https://github.com/EmoteBot6/DieStaemmeScripts",
+        href: "https://github.com/TurkishMagikarp/DieStaemmeScripts",
       },
       {
         label: "Pull Requests",
-        href: "https://github.com/EmoteBot6/DieStaemmeScripts/pulls",
+        href: "https://github.com/TurkishMagikarp/DieStaemmeScripts/pulls",
       },
       {
         label: "Issues",
-        href: "https://github.com/EmoteBot6/DieStaemmeScripts/issues",
+        href: "https://github.com/TurkishMagikarp/DieStaemmeScripts/issues",
       },
     ],
     supportLink: "https://buymeacoffee.com/emotebot",

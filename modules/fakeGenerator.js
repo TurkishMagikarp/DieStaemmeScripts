@@ -111,14 +111,16 @@
       }
     }
 
+    var displayParts = [];
     for (var u in units) {
       state.unitConfig[u] = units[u];
-      var inp = document.getElementById('ds-fg-u-' + u);
-      if (inp) inp.value = units[u];
       var gameInp = document.querySelector('input[name="' + u + '"]');
       if (gameInp && units[u] > 0) gameInp.value = units[u];
+      if (units[u] > 0) displayParts.push(units[u] + 'x ' + (UNIT_LABELS[u] || u));
     }
     saveConfig();
+    var disp = document.getElementById('ds-fg-units-display');
+    if (disp) disp.innerHTML = '<b>Fake:</b> ' + displayParts.join(', ') + ' <span style="color:#888;">(' + minPop + ' Pop)</span>';
   }
 
   function saveConfig() {
@@ -156,15 +158,7 @@
     html += '<textarea id="ds-fg-targets" style="width:100%;height:60px;font-size:11px;margin-top:2px;box-sizing:border-box;">' + (state.targetsText || '') + '</textarea>';
     html += '</div>';
 
-    html += '<div style="margin-bottom:4px;">Einheiten pro Fake:</div>';
-    html += '<div style="margin-bottom:4px;display:flex;flex-wrap:wrap;gap:4px;">';
-    for (var u in state.unitConfig) {
-      html += '<div style="width:48%;display:flex;align-items:center;gap:4px;margin:1px 0;">';
-      html += '<label style="font-size:11px;flex:1;">' + (UNIT_LABELS[u] || u) + '</label>';
-      html += '<input id="ds-fg-u-' + u + '" type="number" min="0" value="' + state.unitConfig[u] + '" style="width:60px;font-size:11px;">';
-      html += '</div>';
-    }
-    html += '</div>';
+    html += '<div id="ds-fg-units-display" style="margin-bottom:4px;font-size:11px;color:#555;min-height:16px;"></div>';
 
     html += '<div style="margin-bottom:6px;padding:6px;border:1px solid #ddd;border-radius:4px;background:#f5f5f5;">';
     html += '<div style="font-size:11px;font-weight:bold;margin-bottom:4px;">Fake-Berechnung</div>';
@@ -185,8 +179,6 @@
     html += '<option value="attack"' + (state.attackMode === 'attack' ? ' selected' : '') + '>Angriff</option>';
     html += '<option value="support"' + (state.attackMode === 'support' ? ' selected' : '') + '>Unterst\u00fctzung</option>';
     html += '</select>';
-    html += '<label style="font-size:11px;">Delay:</label>';
-    html += '<input id="ds-fg-delay" type="number" min="500" value="' + state.delayMs + '" style="width:60px;font-size:11px;"> ms';
     html += '</div>';
     html += '<div style="margin-bottom:6px;display:flex;align-items:center;gap:6px;">';
     var asColor = state.autoSend ? '#4CAF50' : '#888';
@@ -214,12 +206,7 @@
   function readForm() {
     state.targetsText = document.getElementById('ds-fg-targets').value;
     state.targets = parseTargets(state.targetsText);
-    for (var u in state.unitConfig) {
-      var inp = document.getElementById('ds-fg-u-' + u);
-      state.unitConfig[u] = parseInt(inp.value) || 0;
-    }
     state.attackMode = document.getElementById('ds-fg-mode').value;
-    state.delayMs = parseInt(document.getElementById('ds-fg-delay').value) || 3000;
     saveConfig();
   }
 

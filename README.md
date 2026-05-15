@@ -27,7 +27,7 @@ Die Konfiguration erfolgt ebenfalls über die DS-Tools-Einstellungsseite.
 Direkter Installations-Link für Tampermonkey / Violentmonkey:
 
 ```
-https://raw.githubusercontent.com/EmoteBot6/DieStaemmeScripts/master/main.user.js
+https://raw.githubusercontent.com/TurkishMagikarp/DieStaemmeScripts/develop/main.user.js
 ```
 
 Nach der Installation erscheint im Spielmenü der Eintrag **DS-Tools**.

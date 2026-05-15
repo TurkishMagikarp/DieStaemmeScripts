@@ -26,7 +26,8 @@
     enabled: JSON.parse(localStorage.getItem('amfarm_enabled')) ?? false,
     delayMin: parseInt(localStorage.getItem('amfarm_delayMin'), 10) || 200,
     delayMax: parseInt(localStorage.getItem('amfarm_delayMax'), 10) || 400,
-    reload: parseInt(localStorage.getItem('amfarm_reload'), 10) || 5000,
+    reloadMin: parseInt(localStorage.getItem('amfarm_reloadMin'), 10) || 4000,
+    reloadMax: parseInt(localStorage.getItem('amfarm_reloadMax'), 10) || 6000,
     button: localStorage.getItem('amfarm_button') || 'a', // a | b
     fallback: JSON.parse(localStorage.getItem('amfarm_fallback')) ?? true, // use other button if preferred cannot be clicked
   };
@@ -38,11 +39,16 @@
     return Math.floor(Math.random() * (state.delayMax - state.delayMin + 1)) + state.delayMin;
   }
 
+  function randomReload() {
+    return Math.floor(Math.random() * (state.reloadMax - state.reloadMin + 1)) + state.reloadMin;
+  }
+
   function saveState() {
     localStorage.setItem('amfarm_enabled', JSON.stringify(state.enabled));
     localStorage.setItem('amfarm_delayMin', state.delayMin);
     localStorage.setItem('amfarm_delayMax', state.delayMax);
-    localStorage.setItem('amfarm_reload', state.reload);
+    localStorage.setItem('amfarm_reloadMin', state.reloadMin);
+    localStorage.setItem('amfarm_reloadMax', state.reloadMax);
     localStorage.setItem('amfarm_button', state.button);
     localStorage.setItem('amfarm_fallback', JSON.stringify(state.fallback));
   }
@@ -90,6 +96,29 @@
     }
   }
 
+  function scheduleNextClick() {
+    if (!state.enabled) return;
+    var delay = randomReload();
+    clickTimer = setTimeout(function () {
+      if (!state.enabled) return;
+      clickAll();
+      scheduleNextClick();
+    }, delay);
+  }
+
+  function scheduleNextReload() {
+    if (!state.enabled) return;
+    var delay = randomReload();
+    reloadTimer = setTimeout(function () {
+      if (!state.enabled) return;
+      if (guardAction) {
+        guardAction(function () { location.reload(); });
+      } else {
+        location.reload();
+      }
+    }, delay);
+  }
+
   function start() {
     if (clickTimer) return;
 
@@ -100,22 +129,11 @@
     // Initial run
     clickAll();
 
-    // Click cycle
-    clickTimer = setInterval(() => {
-      if (!state.enabled) return;
-      clickAll();
-    }, state.reload);
+    // Click cycle with jitter
+    scheduleNextClick();
 
-    // Reload cycle
-    reloadTimer = setInterval(() => {
-      if (!state.enabled) return;
-
-      if (guardAction) {
-        guardAction(() => location.reload());
-      } else {
-        location.reload();
-      }
-    }, state.reload);
+    // Reload cycle with jitter
+    scheduleNextReload();
   }
 
   function stop() {
@@ -123,8 +141,8 @@
     saveState();
     updateToggle();
 
-    clearInterval(clickTimer);
-    clearInterval(reloadTimer);
+    clearTimeout(clickTimer);
+    clearTimeout(reloadTimer);
     clickTimer = null;
     reloadTimer = null;
   }
@@ -184,9 +202,15 @@
       saveState();
     }));
 
-    box.appendChild(label('Reload (ms)'));
-    box.appendChild(numberInput(state.reload, v => {
-      state.reload = v;
+    box.appendChild(label('Reload Min (ms)'));
+    box.appendChild(numberInput(state.reloadMin, v => {
+      state.reloadMin = v;
+      saveState();
+    }));
+
+    box.appendChild(label('Reload Max (ms)'));
+    box.appendChild(numberInput(state.reloadMax, v => {
+      state.reloadMax = v;
       saveState();
     }));
 

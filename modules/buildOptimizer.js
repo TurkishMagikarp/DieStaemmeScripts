@@ -490,18 +490,13 @@
     //  GREEDY-SCHEDULER
     // =========================================================================
 
-    function getActions(state, required, scenario) {
+    function getActions(state, required) {
         var actions = [];
         var isMine = function (b) { return b === 'timber' || b === 'clay' || b === 'iron'; };
-        var mineTarget = function (b) {
-            var t = required[b] || 0;
-            if (scenario === 'minesfirst') t = Math.max(t, 5);
-            return t;
-        };
 
         for (var bId in state.buildings) {
             var curLvl = state.buildings[bId] || 0;
-            var tgt = (bId === 'timber' || bId === 'clay' || bId === 'iron') ? mineTarget(bId) : (required[bId] || 0);
+            var tgt = required[bId] || 0;
             var nextLvl = curLvl + 1;
             if (nextLvl > tgt) continue;
 
@@ -512,7 +507,7 @@
             }
             if (!met) continue;
 
-            if (scenario === 'nomines' && isMine(bId) && !required[bId]) continue;
+            if (isMine(bId) && !required[bId]) continue;
 
             var cost = getBuildCostAll(bId, nextLvl);
             var bt = getBuildTime(bId, nextLvl, state.buildings.main || 1);
@@ -547,7 +542,7 @@
     //  SIMULATION
     // =========================================================================
 
-    function simulateScenario(targetUnit, startRes, startBld, scenario) {
+    function simulateScenario(targetUnit, startRes, startBld) {
         var req = resolveRequirements(targetUnit);
         if (req.error) return { error: req.error };
 
@@ -558,7 +553,6 @@
             steps: []
         };
 
-        // Quests initialisieren
         state.quests = {};
         var qConfig = [
             { id: 'q_main5',  cond: { main: 5 },   reward: { wood: 300, clay: 300, iron: 300 } },
@@ -578,7 +572,7 @@
             }
             if (targetMet) break;
 
-            var actions = getActions(state, required, scenario);
+            var actions = getActions(state, required);
             if (!actions.length) break;
 
             var chosen = chooseAction(actions, req.targetBuilding);
@@ -638,13 +632,13 @@
     //  OPTIMALE MINEN
     // =========================================================================
 
-    function optimizeMines(targetUnit, startRes, startBld) {
-        var bestResult = simulateScenario(targetUnit, startRes, cloneObj(startBld), 'nomines');
+    function optimize(targetUnit, startRes, startBld) {
+        var bestResult = simulateScenario(targetUnit, startRes, cloneObj(startBld));
         if (bestResult.error) return bestResult;
         var bestTime = bestResult.totalTime;
         var bestBld = cloneObj(startBld);
 
-        for (var iter = 0; iter < 20; iter++) {
+        for (var iter = 0; iter < 15; iter++) {
             var improved = false;
             var mines = ['timber', 'clay', 'iron'];
             for (var mi = 0; mi < mines.length; mi++) {
@@ -653,7 +647,7 @@
                 if (curLvl >= (startBld[mine] || 0) + 5) continue;
                 var testBld = cloneObj(bestBld);
                 testBld[mine] = curLvl + 1;
-                var testResult = simulateScenario(targetUnit, startRes, testBld, 'nomines');
+                var testResult = simulateScenario(targetUnit, startRes, testBld);
                 if (testResult.error) continue;
                 if (testResult.totalTime < bestTime - 60) {
                     bestTime = testResult.totalTime;
@@ -665,63 +659,17 @@
             if (!improved) break;
         }
 
-        bestResult.miningAdded = true;
-        bestResult.scenario = 'optimal';
-        bestResult.scenarioLabel = 'Optimal';
         return bestResult;
-    }
-
-    // =========================================================================
-    //  RUNNER (3 Szenarien)
-    // =========================================================================
-
-    function runScenarios(targetUnit, startRes, startBld) {
-        var results = [];
-
-        // Optimal
-        var optimal = optimizeMines(targetUnit, startRes, cloneObj(startBld));
-        optimal.scenarioLabel = optimal.scenarioLabel || 'Optimal';
-        results.push(optimal);
-
-        // Ohne Minen
-        var nomines = simulateScenario(targetUnit, startRes, cloneObj(startBld), 'nomines');
-        nomines.scenario = 'nomines';
-        nomines.scenarioLabel = 'Ohne Minen';
-        results.push(nomines);
-
-        // Minen zuerst
-        var minesBld = cloneObj(startBld);
-        minesBld.timber = Math.max(minesBld.timber || 0, 5);
-        minesBld.clay   = Math.max(minesBld.clay   || 0, 5);
-        minesBld.iron   = Math.max(minesBld.iron   || 0, 5);
-        var minesfirst = simulateScenario(targetUnit, startRes, minesBld, 'minesfirst');
-        minesfirst.scenario = 'minesfirst';
-        minesfirst.scenarioLabel = 'Minen zuerst';
-        results.push(minesfirst);
-
-        results.sort(function (a, b) {
-            if (a.error && b.error) return 0;
-            if (a.error) return 1; if (b.error) return -1;
-            return (a.totalTime || 999999) - (b.totalTime || 999999);
-        });
-
-        return results;
     }
 
     // =========================================================================
     //  OVERLAY-UI
     // =========================================================================
 
-    function renderOverlay(results, targetUnit) {
+    function renderOverlay(result, targetUnit) {
         removeOverlay();
 
-        var unit = UNIT_BUILDING[targetUnit];
         var worldName = game_data.world || '';
-
-        var fastest = null;
-        results.forEach(function (r) {
-            if (!r.error && (!fastest || r.totalTime < fastest.totalTime)) fastest = r;
-        });
 
         var html = '';
         html += '<div id="dso-overlay" style="position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:99999;max-width:1300px;width:95%;max-height:85vh;overflow-y:auto;background:#f9f6ed;border:2px solid #c1a264;border-radius:10px;box-shadow:0 6px 28px rgba(0,0,0,0.35);padding:14px;font:13px/1.4 system-ui,sans-serif;color:#2c2c2c;">';
@@ -732,44 +680,26 @@
         html += '<div style="font-size:12px;color:#666;">';
         html += 'Einheit: <b>' + (U_NAMES[targetUnit] || targetUnit) + '</b>';
         if (worldName) html += ' | Welt: <b>' + worldName + '</b>';
-        if (fastest && !fastest.error) html += ' | Bester Plan: <b>' + fastest.scenarioLabel + '</b> — <b>' + fmtTime(fastest.totalTime) + '</b>';
+        if (result && !result.error) html += ' | Gesamt: <b>' + fmtTime(result.totalTime) + '</b>';
         html += '</div></div>';
         html += '<div style="display:flex;gap:4px;">';
         html += '<button class="dso-btn" onclick="this.closest(\'#dso-overlay\').remove()">✕ Schließen</button>';
         html += '</div></div>';
 
-        // --- Vergleichstabelle ---
-        html += '<h3 style="margin:6px 0 4px;font-size:14px;">📊 Szenario-Vergleich</h3>';
-        html += '<table class="dso-tbl" style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:8px;">';
-        html += '<tr style="background:#c1a264;color:#fff;"><th>#</th><th>Szenario</th><th>Gesamtzeit</th><th>Bauzeit</th><th>Schritte</th><th>Status</th></tr>';
+        // --- Fehleranzeige ---
+        if (result.error) {
+            html += '<p style="color:#b91c1c;font-weight:bold;text-align:center;padding:20px;">' + result.error + '</p>';
+        }
 
-        results.forEach(function (r, idx) {
-            if (r.error) {
-                html += '<tr><td>' + (idx + 1) + '</td><td>' + (r.scenarioLabel || '?') + '</td><td colspan="4" style="color:#b91c1c;">' + r.error + '</td></tr>';
-                return;
-            }
-            var isFastest = fastest && r === fastest;
-            var bg = isFastest ? '#d4edda' : (idx === 2 ? '#fff3e0' : '#fff');
-            html += '<tr style="background:' + bg + ';">';
-            html += '<td>' + (idx + 1) + '</td>';
-            html += '<td><b>' + (r.scenarioLabel || '?') + '</b></td>';
-            html += '<td><b>' + fmtTime(r.totalTime) + '</b></td>';
-            html += '<td>' + (r.steps ? fmtTime(r.steps.reduce(function (a, s) { return a + (s.buildTime || 0); }, 0)) : '-') + '</td>';
-            html += '<td>' + (r.steps ? r.steps.length : 0) + '</td>';
-            html += '<td>' + (isFastest ? '🏆 Schnellste' : (r.miningAdded ? '✓ Minen' : '')) + '</td>';
-            html += '</tr>';
-        });
-        html += '</table>';
-
-        // --- Detailtabelle des schnellsten Pfads ---
-        if (fastest && !fastest.error && fastest.steps && fastest.steps.length) {
-            html += '<h3 style="margin:8px 0 4px;font-size:14px;">📋 Buildorder: ' + fastest.scenarioLabel + '</h3>';
+        // --- Detailtabelle ---
+        if (result && !result.error && result.steps && result.steps.length) {
+            html += '<h3 style="margin:8px 0 4px;font-size:14px;">📋 Buildorder</h3>';
             html += '<table class="dso-tbl" style="width:100%;border-collapse:collapse;font-size:11px;">';
             html += '<tr style="background:#c1a264;color:#fff;">';
             html += '<th>#</th><th>Gebäude</th><th>Stufe</th><th>Start</th><th>Warten</th><th>Bauzeit</th><th>Ende</th>';
             html += '<th>Kosten (H/L/E)</th><th>Reserven</th><th>Quest</th></tr>';
 
-            fastest.steps.forEach(function (st) {
+            result.steps.forEach(function (st) {
                 var bg = '#fff';
                 if (st.isMain) bg = '#e8f0fe';
                 else if (st.isMine) bg = '#e8f5e9';
@@ -796,24 +726,6 @@
             html += '<button class="dso-btn" onclick="DSO_copyCSV()">📊 CSV</button>';
             html += '</div>';
         }
-
-        // Alle Pfade als einklappbare Details
-        html += '<div style="margin-top:8px;">';
-        results.forEach(function (r, idx) {
-            if (r.error || r === fastest || !r.steps || !r.steps.length) return;
-            html += '<details style="margin-top:4px;"><summary style="cursor:pointer;font-weight:bold;font-size:12px;">📋 ' + r.scenarioLabel + ' — ' + fmtTime(r.totalTime) + '</summary>';
-            html += '<table class="dso-tbl" style="width:100%;border-collapse:collapse;font-size:10px;margin-top:4px;">';
-            html += '<tr style="background:#c1a264;color:#fff;"><th>#</th><th>Gebäude</th><th>Stufe</th><th>Start</th><th>Warten</th><th>Bauzeit</th><th>Ende</th><th>Kosten</th><th>Quest</th></tr>';
-            r.steps.forEach(function (st) {
-                html += '<tr><td>' + st.step + '</td><td>' + getBuildingName(st.building) + '</td><td>' + st.fromLevel + '→' + st.toLevel + '</td>';
-                html += '<td>' + fmtTime(st.startTime) + '</td><td>' + (st.waitTime > 1 ? fmtTime(st.waitTime) : '-') + '</td>';
-                html += '<td>' + fmtTime(st.buildTime) + '</td><td>' + fmtTime(st.endTime) + '</td>';
-                html += '<td>' + fmtRes(st.cost) + '</td>';
-                html += '<td>' + (st.questReward && (st.questReward.wood || st.questReward.clay || st.questReward.iron) ? '+' + fmtRes(st.questReward) : '-') + '</td></tr>';
-            });
-            html += '</table></details>';
-        });
-        html += '</div>';
 
         html += '</div>';
 
@@ -919,8 +831,8 @@
 
             var startRes = currentResources();
             var startBld = currentBuildings();
-            var results = runScenarios(targetUnit, startRes, startBld);
-            renderOverlay(results, targetUnit);
+            var result = optimize(targetUnit, startRes, startBld);
+            renderOverlay(result, targetUnit);
             isComputing = false;
         });
     }
@@ -945,7 +857,7 @@
                     return '<option value="' + k + '">' + (U_NAMES[k] || k) + '</option>';
                 }).join('')
                 + '</select>'
-                + '<button id="dso-start" class="btn" style="width:100%;">Vergleich berechnen</button></div>';
+                + '<button id="dso-start" class="btn" style="width:100%;">Optimierung berechnen</button></div>';
 
             var cv = document.getElementById('content_value');
             var target = cv.querySelector('table.vis') || cv.firstElementChild;

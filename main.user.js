@@ -12,7 +12,7 @@
 // @match        https://*.die-staemme.de/game.php?*
 // @match        https://*ds-ultimate.de/tools/attackPlanner/*
 // @match        https://twforge.net/worlds/*/planner/plans/*
-// @icon         https://pbs.twimg.com/profile_images/1456997417807716357/oX-R0v9l_400x400.png
+// @icon         https://img.pokemondb.net/artwork/large/magikarp.jpg
 // @updateURL    https://raw.githubusercontent.com/TurkishMagikarp/DieStaemmeScripts/master/main.user.js
 // @downloadURL  https://raw.githubusercontent.com/TurkishMagikarp/DieStaemmeScripts/master/main.user.js
 // @grant        GM_xmlhttpRequest

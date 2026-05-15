@@ -222,8 +222,55 @@
     }
   }
 
+  async function testFullFlow() {
+    const apiKey = getApiKey();
+    if (!apiKey) {
+      console.warn('[CaptchaSolver] Kein API-Key gesetzt.');
+      return;
+    }
+    console.log('[CaptchaSolver] Starte Test-Captcha (2captcha Testbild)...');
+    var testUrl = 'https://2captcha.com/dist/web/054bfa9962f30d1c3ca0d392c1f7e53f.png';
+    try {
+      var resp = await fetch(testUrl);
+      var blob = await resp.blob();
+      var base64 = await new Promise(function (resolve, reject) {
+        var r = new FileReader();
+        r.onloadend = function () { resolve(r.result.split(',')[1]); };
+        r.onerror = reject;
+        r.readAsDataURL(blob);
+      });
+      var result = await solveWith2Captcha(base64, apiKey);
+      if (result) {
+        console.log('[CaptchaSolver] Test BESTANDEN! Gelöstes Captcha:', result);
+      } else {
+        console.error('[CaptchaSolver] Test FEHLGESCHLAGEN – kein Ergebnis.');
+      }
+    } catch (e) {
+      console.error('[CaptchaSolver] Test-Fehler:', e);
+    }
+  }
+
+  function testInjectFakeCaptcha() {
+    if (document.getElementById('ds-test-captcha')) return;
+    var overlay = document.createElement('div');
+    overlay.id = 'ds-test-captcha';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:99998;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;';
+    overlay.innerHTML =
+      '<div class="bot-protection-row" style="background:#fff;padding:20px;border-radius:8px;text-align:center;box-shadow:0 0 20px rgba(0,0,0,.3);">' +
+      '<p style="margin:0 0 10px;font-weight:bold;">Bot-Schutz Test</p>' +
+      '<img src="https://2captcha.com/dist/web/054bfa9962f30d1c3ca0d392c1f7e53f.png" style="margin-bottom:10px;">' +
+      '<div><input type="text" name="captcha" style="padding:4px;width:200px;"></div>' +
+      '<div style="margin-top:8px;"><button type="submit" style="padding:6px 20px;">Prüfung abschließen</button></div>' +
+      '<div style="margin-top:8px;font-size:11px;color:#888;">DSTools.triggerCaptchaSolve() zum Testen</div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+    console.log('[CaptchaSolver] Fake-Captcha eingeblendet. Ruf DSTools.triggerCaptchaSolve() auf.');
+  }
+
   win.DSTools = win.DSTools || {};
   win.DSTools.testCaptchaSolver = testApiKey;
+  win.DSTools.testFullFlow = testFullFlow;
+  win.DSTools.testInjectFakeCaptcha = testInjectFakeCaptcha;
   win.DSTools.triggerCaptchaSolve = attemptSolve;
 
   function init() {

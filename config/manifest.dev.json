@@ -48,6 +48,14 @@
     ],
     "place": [
       {
+        "url": "modules/fakeGenerator.js",
+        "id": "fakeGenerator",
+        "title": "Versammlungsplatz: Fake-Angriffs-Generator",
+        "desc": "Generiert Fake-Angriffe aus einer Koordinaten-Liste mit konfigurierbaren Einheiten und Verzögerung.",
+        "defaultEnabled": false,
+        "compliance": "illegal"
+      },
+      {
         "url": "ui/toggleButton.js",
         "id": "toggleButtonMap",
         "title": "Versammlungsplatz: Toggle-Button",
@@ -334,6 +342,14 @@
         "desc": "Baut automatisch Gebäude aus. Besonders nützlich für das Early-Game.",
         "defaultEnabled": false,
         "compliance": "illegal"
+      },
+      {
+        "url": "modules/farmSpaceForecaster.js",
+        "id": "farmSpaceForecaster",
+        "title": "Hauptgebäude: Farm-Space-Prognose",
+        "desc": "Zeigt eine Vorhersage, wann der Farm-Space voll sein wird, basierend auf aktueller Rekrutierung und Ausbau-Warteschlange.",
+        "defaultEnabled": true,
+        "compliance": "legal"
       }
     ]
   }

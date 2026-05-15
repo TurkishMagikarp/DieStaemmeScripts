@@ -1,49 +1,20 @@
 (function () {
   'use strict';
-  console.log('[CaptchaSolver] MODUL WIRD EVALED');
   if (window.__dsCaptchaSolverLoaded) return;
   window.__dsCaptchaSolverLoaded = true;
 
-  const win = window;
+  var SETTINGS_KEY = 'dsToolsUserSettings';
 
-  const SETTINGS_KEY = 'dsToolsUserSettings';
-
-  const SELECTORS_CAPTCHA_IMG = [
-    '.bot-protection-row img[src*="captcha"]',
-    '.bot-protection-row img[src*="bot"]',
-    '#content_value .captcha img',
-    '.captcha img',
-  ];
-  const SELECTORS_CAPTCHA_INPUT = [
-    '.bot-protection-row input[type="text"]',
-    '.bot-protection-row input[name="captcha"]',
-    '#content_value .captcha input',
-    '.captcha input[type="text"]',
-  ];
-  const SELECTORS_CAPTCHA_SUBMIT = [
-    '.bot-protection-row button[type="submit"]',
-    '.bot-protection-row input[type="submit"]',
-    '#content_value .captcha button',
-    '.captcha button',
-  ];
-
-  let solving = false;
+  var solving = false;
 
   async function readSettingsFromGM() {
-    try {
-      if (typeof GM !== 'undefined' && GM.getValue) {
-        return await GM.getValue(SETTINGS_KEY, {});
-      }
-    } catch {}
+    try { if (typeof GM !== 'undefined' && GM.getValue) return await GM.getValue(SETTINGS_KEY, {}); } catch {}
     try { return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}; } catch {}
     return {};
   }
 
   function getApiKey() {
-    try {
-      const s = win.DS_USER_SETTINGS || {};
-      return s.captchaApiKey || '';
-    } catch { return ''; }
+    try { var s = window.DS_USER_SETTINGS || {}; return s.captchaApiKey || ''; } catch { return ''; }
   }
 
   async function getApiKeyAsync() {
@@ -54,48 +25,7 @@
   }
 
   function isEnabled() {
-    try {
-      const s = win.DS_USER_SETTINGS || {};
-      return s.captchaSolverEnabled !== false;
-    } catch { return true; }
-  }
-
-  function findCaptchaImage() {
-    for (const sel of SELECTORS_CAPTCHA_IMG) {
-      const img = document.querySelector(sel);
-      if (img && img.src) return img;
-    }
-    return null;
-  }
-
-  function findCaptchaInput() {
-    for (const sel of SELECTORS_CAPTCHA_INPUT) {
-      const inp = document.querySelector(sel);
-      if (inp) return inp;
-    }
-    return null;
-  }
-
-  function findCaptchaSubmit() {
-    for (const sel of SELECTORS_CAPTCHA_SUBMIT) {
-      const btn = document.querySelector(sel);
-      if (btn) return btn;
-    }
-    return null;
-  }
-
-  async function imgToBase64ViaFetch(img) {
-    const resp = await fetch(img.src, { credentials: 'include' });
-    const blob = await resp.blob();
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const dataUrl = reader.result;
-        resolve(dataUrl.split(',')[1]);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
+    try { var s = window.DS_USER_SETTINGS || {}; return s.captchaSolverEnabled !== false; } catch { return true; }
   }
 
   function gmRequest(method, url, data) {
@@ -112,85 +42,150 @@
           timeout: 30000,
         });
       } else {
-        fetch(url, { method: method, body: data, mode: 'no-cors' })
-          .then(function (r) { return r.text(); })
-          .then(resolve)
-          .catch(reject);
+        fetch(url, { method: method, body: data, mode: 'no-cors' }).then(function (r) { return r.text(); }).then(resolve).catch(reject);
       }
     });
   }
 
-  async function solveWith2Captcha(base64, apiKey) {
-    var body = 'method=base64&key=' + encodeURIComponent(apiKey) + '&body=' + encodeURIComponent(base64) + '&json=1';
-    try {
-      var respText = await gmRequest('POST', 'https://2captcha.com/in.php', body);
-      var data = JSON.parse(respText);
-      if (data.status !== 1) {
-        console.error('[CaptchaSolver] 2captcha upload failed:', data.error || data.request);
-        return null;
-      }
-      var captchaId = data.request;
+  async function poll2captcha(apiKey, captchaId) {
+    for (var i = 0; i < 90; i++) {
+      await new Promise(function (r) { setTimeout(r, 3000); });
+      var text = await gmRequest('GET', 'https://2captcha.com/res.php?key=' + encodeURIComponent(apiKey) + '&action=get&id=' + encodeURIComponent(captchaId) + '&json=1');
+      var d = JSON.parse(text);
+      if (d.status === 1) return d.request;
+      if (d.request && d.request !== 'CAPCHA_NOT_READY') { console.error('[CaptchaSolver] 2captcha error:', d.request); return null; }
+    }
+    return null;
+  }
 
-      for (var i = 0; i < 90; i++) {
-        await new Promise(function (r) { setTimeout(r, 3000); });
-        var pollText = await gmRequest('GET', 'https://2captcha.com/res.php?key=' + encodeURIComponent(apiKey) + '&action=get&id=' + encodeURIComponent(captchaId) + '&json=1');
-        var pollData = JSON.parse(pollText);
-        if (pollData.status === 1) return pollData.request;
-        if (pollData.request && pollData.request !== 'CAPCHA_NOT_READY') {
-          console.error('[CaptchaSolver] 2captcha error:', pollData.request);
-          return null;
+  async function solveImgCaptcha(apiKey, img) {
+    var resp = await fetch(img.src, { credentials: 'include' });
+    var blob = await resp.blob();
+    var base64 = await new Promise(function (resolve, reject) {
+      var r = new FileReader();
+      r.onloadend = function () { resolve(r.result.split(',')[1]); };
+      r.onerror = reject;
+      r.readAsDataURL(blob);
+    });
+    var body = 'method=base64&key=' + encodeURIComponent(apiKey) + '&body=' + encodeURIComponent(base64) + '&json=1';
+    var text = await gmRequest('POST', 'https://2captcha.com/in.php', body);
+    var d = JSON.parse(text);
+    if (d.status !== 1) { console.error('[CaptchaSolver] Upload failed:', d.error || d.request); return null; }
+    return await poll2captcha(apiKey, d.request);
+  }
+
+  async function solveRecaptcha(apiKey, sitekey) {
+    var pageUrl = location.href.split('?')[0] + '?' + location.search.slice(1);
+    var body = 'method=userrecaptcha&key=' + encodeURIComponent(apiKey) + '&googlekey=' + encodeURIComponent(sitekey) + '&pageurl=' + encodeURIComponent(pageUrl) + '&json=1';
+    var text = await gmRequest('POST', 'https://2captcha.com/in.php', body);
+    var d = JSON.parse(text);
+    if (d.status !== 1) { console.error('[CaptchaSolver] reCAPTCHA upload failed:', d.error || d.request); return null; }
+    return await poll2captcha(apiKey, d.request);
+  }
+
+  function clickCheckbox() {
+    var selectors = [
+      '.bot-protection-row .recaptcha-checkbox',
+      '.bot-protection-row iframe[src*="recaptcha"]',
+      '.bot-protection-row button:first-child',
+      '.bot-protection-row a',
+      '#content_value .captcha button',
+      '.captcha button',
+    ];
+    for (var i = 0; i < selectors.length; i++) {
+      var el = document.querySelector(selectors[i]);
+      if (el) { el.click(); console.log('[CaptchaSolver] Checkbox geklickt'); return true; }
+    }
+    return false;
+  }
+
+  function findSitekey() {
+    var gc = document.querySelector('.g-recaptcha');
+    if (gc) {
+      var sk = gc.getAttribute('data-sitekey');
+      if (sk) return sk;
+    }
+    var iframe = document.querySelector('iframe[src*="recaptcha"]');
+    if (iframe) {
+      var m = iframe.src.match(/[?&]k=([^&]+)/);
+      if (m) return m[1];
+    }
+    return null;
+  }
+
+  function injectRecaptchaToken(token) {
+    var ta = document.getElementById('g-recaptcha-response');
+    if (ta) {
+      ta.innerHTML = token;
+      ta.value = token;
+    }
+    var forms = document.querySelectorAll('form');
+    for (var i = 0; i < forms.length; i++) {
+      var inp = forms[i].querySelector('input[name="g-recaptcha-response"]');
+      if (inp) { inp.value = token; }
+    }
+    try {
+      if (window.___grecaptcha_cfg) {
+        for (var id in window.___grecaptcha_cfg.closed) {
+          var c = window.___grecaptcha_cfg.closed[id];
+          if (c && typeof c.callback === 'function') c.callback(token);
         }
       }
-      console.error('[CaptchaSolver] 2captcha timeout');
-      return null;
-    } catch (e) {
-      console.error('[CaptchaSolver] 2captcha network error:', e);
-      return null;
-    }
+    } catch (e) {}
   }
 
   async function attemptSolve() {
     if (solving) return;
     if (!isEnabled()) return;
-
-    const apiKey = await getApiKeyAsync();
+    var apiKey = await getApiKeyAsync();
     if (!apiKey) {
-      console.log('[CaptchaSolver] Kein 2captcha API-Key konfiguriert → Settings-Seite offen (screen=dstools)');
+      console.log('[CaptchaSolver] Kein 2captcha API-Key konfiguriert.');
       return;
     }
-
-    const img = findCaptchaImage();
-    const input = findCaptchaInput();
-    const submit = findCaptchaSubmit();
-
-    if (!img || !input || !submit) {
-      console.log('[CaptchaSolver] Captcha-Elemente nicht vollständig gefunden.');
-      return;
-    }
-
     solving = true;
-    console.log('[CaptchaSolver] Captcha erkannt, sende an 2captcha...');
-
     try {
-      if (!img.complete || img.naturalWidth === 0) {
-        await new Promise((resolve) => {
-          img.onload = resolve;
-          img.onerror = resolve;
-          setTimeout(resolve, 5000);
-        });
+      // Phase 1: reCAPTCHA (Bildauswahl)
+      var sitekey = findSitekey();
+      if (sitekey) {
+        console.log('[CaptchaSolver] reCAPTCHA erkannt, sende an 2captcha...');
+        var token = await solveRecaptcha(apiKey, sitekey);
+        if (token) {
+          injectRecaptchaToken(token);
+          await new Promise(function (r) { setTimeout(r, 300 + Math.random() * 300); });
+          var btn = document.querySelector('.bot-protection-row button[type="submit"], .bot-protection-row input[type="submit"], #content_value .captcha button, .captcha button');
+          if (btn) { btn.disabled = false; btn.click(); }
+          console.log('[CaptchaSolver] reCAPTCHA gelöst!');
+        } else {
+          console.warn('[CaptchaSolver] reCAPTCHA Lösung fehlgeschlagen.');
+        }
+        return;
       }
 
-      const base64 = await imgToBase64ViaFetch(img);
-      const result = await solveWith2Captcha(base64, apiKey);
+      // Phase 2: Text-Captcha (Bild + Eingabefeld)
+      var img = document.querySelector('.bot-protection-row img[src*="captcha"], .bot-protection-row img[src*="bot"], #content_value .captcha img, .captcha img');
+      var input = document.querySelector('.bot-protection-row input[type="text"], .bot-protection-row input[name="captcha"], #content_value .captcha input, .captcha input[type="text"]');
+      var submit = document.querySelector('.bot-protection-row button[type="submit"], .bot-protection-row input[type="submit"], #content_value .captcha button, .captcha button');
+      if (img && input && submit) {
+        if (!img.complete || img.naturalWidth === 0) await new Promise(function (r) { img.onload = r; img.onerror = r; setTimeout(r, 5000); });
+        console.log('[CaptchaSolver] Text-Captcha erkannt, sende an 2captcha...');
+        var result = await solveImgCaptcha(apiKey, img);
+        if (result) {
+          input.value = result;
+          await new Promise(function (r) { setTimeout(r, 200 + Math.random() * 300); });
+          submit.disabled = false;
+          submit.click();
+          console.log('[CaptchaSolver] Text-Captcha gelöst!');
+        } else {
+          console.warn('[CaptchaSolver] Text-Captcha fehlgeschlagen.');
+        }
+        return;
+      }
 
-      if (result) {
-        input.value = result;
-        await new Promise((r) => setTimeout(r, 200 + Math.random() * 300));
-        submit.disabled = false;
-        submit.click();
-        console.log('[CaptchaSolver] Captcha gelöst und abgesendet!');
-      } else {
-        console.warn('[CaptchaSolver] Konnte Captcha nicht lösen.');
+      // Phase 3: Einfacher Klick (keine Bildauswahl, kein Input)
+      var protection = document.querySelector('.bot-protection-row, #content_value .captcha, .captcha');
+      if (protection && !protection.querySelector('input[type="text"], input[type="email"], input[type="password"], input[name="captcha"], img[src*="captcha"], .g-recaptcha, iframe[src*="recaptcha"]')) {
+        console.log('[CaptchaSolver] Einfacher Klick reicht...');
+        clickCheckbox();
       }
     } catch (e) {
       console.error('[CaptchaSolver] Fehler:', e);
@@ -199,70 +194,41 @@
     }
   }
 
-  let domCheckInterval = null;
+  var domCheckInterval = null;
 
   function startDomWatcher() {
     if (domCheckInterval) return;
-    domCheckInterval = setInterval(() => {
-      if (solving) return;
-      if (!isEnabled()) return;
-      const bg = win.DS_BotGuard;
-      if (bg && bg.isActive && bg.isActive()) {
-        attemptSolve();
-      }
+    domCheckInterval = setInterval(function () {
+      if (solving || !isEnabled()) return;
+      var bg = window.DS_BotGuard;
+      if (bg && bg.isActive && bg.isActive()) attemptSolve();
     }, 2000);
   }
 
   function hookBotGuard() {
-    const bg = win.DS_BotGuard;
-    if (!bg || !bg.onChange) {
-      setTimeout(hookBotGuard, 500);
-      return;
-    }
-
-    bg.onChange((active) => {
-      if (active) setTimeout(() => attemptSolve(), 600);
-    });
-
-    if (bg.isActive()) {
-      setTimeout(() => attemptSolve(), 600);
-    }
-
+    var bg = window.DS_BotGuard;
+    if (!bg || !bg.onChange) { setTimeout(hookBotGuard, 500); return; }
+    bg.onChange(function (active) { if (active) setTimeout(function () { attemptSolve(); }, 600); });
+    if (bg.isActive()) setTimeout(function () { attemptSolve(); }, 600);
     startDomWatcher();
     console.log('[CaptchaSolver] BotGuard-Hook aktiv.');
   }
 
   async function testApiKey() {
-    var fromMem = getApiKey();
-    var fromGM = await getApiKeyAsync();
-    console.log('[CaptchaSolver] DEBUG — Key aus window.DS_USER_SETTINGS:', JSON.stringify(fromMem));
-    console.log('[CaptchaSolver] DEBUG — Key aus GM Storage:', JSON.stringify(fromGM));
-    console.log('[CaptchaSolver] DEBUG — DS_USER_SETTINGS:', JSON.stringify(win.DS_USER_SETTINGS));
-    const apiKey = fromGM;
-    if (!apiKey) {
-      console.warn('[CaptchaSolver] Kein API-Key gesetzt. Erst in ?screen=dstools eintragen und speichern.');
-      return;
-    }
+    var key = await getApiKeyAsync();
+    if (!key) { console.warn('[CaptchaSolver] Kein API-Key.'); return; }
     try {
-      var respText = await gmRequest('GET', 'https://2captcha.com/res.php?key=' + encodeURIComponent(apiKey) + '&action=getbalance&json=1');
-      var data = JSON.parse(respText);
-      if (data.status === 1) {
-        console.log('[CaptchaSolver] API-Key VALIDE. Guthaben: ' + data.request + ' USDC');
-      } else {
-        console.error('[CaptchaSolver] API-Key UNGÜLTIG:', data.request);
-      }
-    } catch (e) {
-      console.error('[CaptchaSolver] Test fehlgeschlagen:', e);
-    }
+      var text = await gmRequest('GET', 'https://2captcha.com/res.php?key=' + encodeURIComponent(key) + '&action=getbalance&json=1');
+      var d = JSON.parse(text);
+      if (d.status === 1) console.log('[CaptchaSolver] API-Key VALIDE. Guthaben: ' + d.request + ' USDC');
+      else console.error('[CaptchaSolver] API-Key UNGÜLTIG:', d.request);
+    } catch (e) { console.error('[CaptchaSolver] Fehler:', e); }
   }
 
   async function testFullFlow() {
-    const apiKey = await getApiKeyAsync();
-    if (!apiKey) {
-      console.warn('[CaptchaSolver] Kein API-Key gesetzt.');
-      return;
-    }
-    console.log('[CaptchaSolver] Starte Test-Captcha (Canvas-Generiert)...');
+    var key = await getApiKeyAsync();
+    if (!key) { console.warn('[CaptchaSolver] Kein API-Key.'); return; }
+    console.log('[CaptchaSolver] Starte Text-Captcha Test...');
     try {
       var c = document.createElement('canvas');
       c.width = 200; c.height = 60;
@@ -271,48 +237,25 @@
       ctx.font = '30px Arial'; ctx.fillStyle = '#333';
       ctx.fillText('test42', 40, 42);
       var base64 = c.toDataURL('image/png').split(',')[1];
-      var result = await solveWith2Captcha(base64, apiKey);
-      if (result) {
-        console.log('[CaptchaSolver] Test BESTANDEN! 2captcha Antwort:', result);
-      } else {
-        console.error('[CaptchaSolver] Test FEHLGESCHLAGEN – kein Ergebnis.');
-      }
-    } catch (e) {
-      console.error('[CaptchaSolver] Test-Fehler:', e);
-    }
-  }
-
-  function testInjectFakeCaptcha() {
-    if (document.getElementById('ds-test-captcha')) return;
-    var overlay = document.createElement('div');
-    overlay.id = 'ds-test-captcha';
-    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:99998;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;';
-    overlay.innerHTML =
-      '<div class="bot-protection-row" style="background:#fff;padding:20px;border-radius:8px;text-align:center;box-shadow:0 0 20px rgba(0,0,0,.3);">' +
-      '<p style="margin:0 0 10px;font-weight:bold;">Bot-Schutz Test</p>' +
-      '<img src="https://2captcha.com/dist/web/054bfa9962f30d1c3ca0d392c1f7e53f.png" style="margin-bottom:10px;">' +
-      '<div><input type="text" name="captcha" style="padding:4px;width:200px;"></div>' +
-      '<div style="margin-top:8px;"><button type="submit" style="padding:6px 20px;">Prüfung abschließen</button></div>' +
-      '<div style="margin-top:8px;font-size:11px;color:#888;">DSTools.triggerCaptchaSolve() zum Testen</div>' +
-      '</div>';
-    document.body.appendChild(overlay);
-    console.log('[CaptchaSolver] Fake-Captcha eingeblendet. Ruf DSTools.triggerCaptchaSolve() auf.');
+      var body = 'method=base64&key=' + encodeURIComponent(key) + '&body=' + encodeURIComponent(base64) + '&json=1';
+      var text = await gmRequest('POST', 'https://2captcha.com/in.php', body);
+      var d = JSON.parse(text);
+      if (d.status !== 1) { console.error('[CaptchaSolver] Upload failed:', d.error || d.request); return; }
+      var result = await poll2captcha(key, d.request);
+      if (result) console.log('[CaptchaSolver] Test BESTANDEN! 2captcha:', result);
+      else console.error('[CaptchaSolver] Test FEHLGESCHLAGEN.');
+    } catch (e) { console.error('[CaptchaSolver] Fehler:', e); }
   }
 
   var pageWin = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
   pageWin.DSTools = pageWin.DSTools || {};
   pageWin.DSTools.testCaptchaSolver = testApiKey;
   pageWin.DSTools.testFullFlow = testFullFlow;
-  pageWin.DSTools.testInjectFakeCaptcha = testInjectFakeCaptcha;
   pageWin.DSTools.triggerCaptchaSolve = attemptSolve;
 
   function init() {
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', hookBotGuard);
-    } else {
-      hookBotGuard();
-    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', hookBotGuard);
+    else hookBotGuard();
   }
-
   init();
 })();

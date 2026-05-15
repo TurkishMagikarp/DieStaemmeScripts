@@ -74,8 +74,7 @@
 
   async function clickAll() {
     if (noUnitsAvailable()) {
-      console.log('[AMFarm] Keine Einheiten verfügbar → stoppe.');
-      stop();
+      console.log('[AMFarm] Nicht genügend Einheiten → überspringe diesen Zyklus.');
       return;
     }
 
@@ -113,8 +112,7 @@
     }
 
     if (clicked === 0) {
-      console.log('[AMFarm] Kein einziger Button klickbar → stoppe.');
-      stop();
+      console.log('[AMFarm] Kein einziger Button klickbar → überspringe Zyklus.' + (noUnitsAvailable() ? '' : ' (warten auf Reload)'));
     }
   }
 

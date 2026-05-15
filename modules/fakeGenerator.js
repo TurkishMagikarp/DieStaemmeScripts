@@ -197,6 +197,7 @@
 
     panel.innerHTML = html;
     document.body.appendChild(panel);
+    if (window.DSUI?.position?.setPanelEl) window.DSUI.position.setPanelEl('fakeGenerator', panel);
 
     document.getElementById('ds-fg-start').addEventListener('click', startFaking);
     document.getElementById('ds-fg-stop').addEventListener('click', stopFaking);

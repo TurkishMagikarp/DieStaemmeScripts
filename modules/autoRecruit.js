@@ -96,6 +96,7 @@
     container.appendChild(delayLabel);
     container.appendChild(delayInput);
     document.body.appendChild(container);
+    if (window.DSUI?.position?.setPanelEl) window.DSUI.position.setPanelEl('autoRecruit', container);
   }
 
   // ---- Core actions (all gated) --------------------------------------------

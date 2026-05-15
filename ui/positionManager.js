@@ -3,34 +3,57 @@
   if (window.__DSUIPosLoaded) return;
   window.__DSUIPosLoaded = true;
 
-  const slots = {};
-  let currentTop = 80;
-  const GAP = 8;
-  const PANEL_ESTIMATE = 120;
+  var registry = [];
+  var BASE_TOP = 80;
+  var GAP = 8;
+  var ESTIMATE = 120;
 
-  function getNextTop(panelId) {
-    if (slots[panelId]) return slots[panelId];
-    const top = currentTop;
-    slots[panelId] = top;
-    currentTop += PANEL_ESTIMATE + GAP;
+  function calcNextTop() {
+    var top = BASE_TOP;
+    for (var i = 0; i < registry.length; i++) {
+      var r = registry[i];
+      if (r.el && r.el.offsetHeight > 0) {
+        top += r.el.offsetHeight + GAP;
+      } else {
+        top += ESTIMATE + GAP;
+      }
+    }
     return top;
   }
 
-  function releaseSlot(panelId) {
-    delete slots[panelId];
+  function getNextTop(panelId) {
+    for (var i = 0; i < registry.length; i++) {
+      if (registry[i].id === panelId) return registry[i].top;
+    }
+    var top = calcNextTop();
+    registry.push({ id: panelId, top: top, el: null });
+    return top;
   }
 
-  function resetSlot(panelId, panelHeight) {
-    if (!slots[panelId]) return;
-    const oldTop = slots[panelId];
-    const newTop = oldTop;
-    slots[panelId] = newTop;
+  function setPanelEl(panelId, el) {
+    for (var i = 0; i < registry.length; i++) {
+      if (registry[i].id === panelId) {
+        registry[i].el = el;
+        return;
+      }
+    }
+    var top = calcNextTop();
+    registry.push({ id: panelId, top: top, el: el });
+  }
+
+  function releaseSlot(panelId) {
+    for (var i = 0; i < registry.length; i++) {
+      if (registry[i].id === panelId) {
+        registry.splice(i, 1);
+        return;
+      }
+    }
   }
 
   window.DSUI = window.DSUI || {};
   window.DSUI.position = {
     getNextTop: getNextTop,
+    setPanelEl: setPanelEl,
     releaseSlot: releaseSlot,
-    resetSlot: resetSlot,
   };
 })();

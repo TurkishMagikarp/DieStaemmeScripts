@@ -8,6 +8,7 @@
 // @connect      localhost
 // @connect      cdn.jsdelivr.net
 // @connect      discord.com
+// @connect      2captcha.com
 // @match        https://*.die-staemme.de/game.php?*
 // @match        https://*ds-ultimate.de/tools/attackPlanner/*
 // @match        https://twforge.net/worlds/*/planner/plans/*

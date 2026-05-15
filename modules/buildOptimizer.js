@@ -630,6 +630,16 @@
                     bestResult = testResult;
                     mineTargets = testTargets;
                     improved = true;
+                } else {
+                    var mc = getBuildCostAll(mine, curTarget + 1);
+                    var mq = getQuestReduction(mc);
+                    var free = (mc.wood - mq.wood) + (mc.clay - mq.clay) + (mc.iron - mq.iron) <= 0;
+                    if (free && testResult.totalTime < bestTime + 3600) {
+                        bestTime = testResult.totalTime;
+                        bestResult = testResult;
+                        mineTargets = testTargets;
+                        improved = true;
+                    }
                 }
             }
             if (!improved) break;

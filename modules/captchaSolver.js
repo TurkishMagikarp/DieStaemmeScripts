@@ -7,6 +7,20 @@
 
   var solving = false;
 
+  var PRE_STAGE_SELECTORS = [
+    '#bot-icon',
+    '.bot-icon',
+    'img[src*="bot-icon"]',
+    'img[src*="character"]',
+    'div[class*="bot"]:not(.bot-protection-row):not(.bot-protection-blur)',
+    'a[href*="bot_check"]',
+    'div[onclick*="bot"]',
+    '#content_value div:has(img[src*="bot"])',
+    '.bot_start',
+    '#bot_start',
+    'div[id*="bot"]:not([id*="protect"])',
+  ];
+
   async function readSettingsFromGM() {
     try { if (typeof GM !== 'undefined' && GM.getValue) return await GM.getValue(SETTINGS_KEY, {}); } catch {}
     try { return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}; } catch {}
@@ -134,16 +148,73 @@
     } catch (e) {}
   }
 
+  function clickPreStage() {
+    for (var i = 0; i < PRE_STAGE_SELECTORS.length; i++) {
+      try {
+        var el = document.querySelector(PRE_STAGE_SELECTORS[i]);
+        if (el && el.offsetParent !== null) {
+          el.click();
+          console.log('[CaptchaSolver] Pre-Stage Männchen geklickt.');
+          return true;
+        }
+      } catch (e) {}
+    }
+    return false;
+  }
+
+  function clickStartButton() {
+    var selectors = [
+      '.bot-protection-blur button',
+      '.bot-protection-blur a',
+      '.bot-protection-blur input[type="submit"]',
+      'button:contains("Beginne")',
+      'button:contains("Bot-Schutz")',
+      'a:contains("Beginne")',
+    ];
+    for (var i = 0; i < selectors.length; i++) {
+      try {
+        var el = document.querySelector(selectors[i]);
+        if (el && el.offsetParent !== null) {
+          el.click();
+          console.log('[CaptchaSolver] "Beginne Bot-Schutz" geklickt.');
+          return true;
+        }
+      } catch (e) {}
+    }
+    var all = document.querySelectorAll('.bot-protection-blur button, .bot-protection-blur a, .bot-protection-blur input[type="submit"]');
+    for (var i = 0; i < all.length; i++) {
+      if (all[i].offsetParent !== null) { all[i].click(); console.log('[CaptchaSolver] Start-Button im Blur geklickt.'); return true; }
+    }
+    return false;
+  }
+
   async function attemptSolve() {
     if (solving) return;
     if (!isEnabled()) return;
-    var apiKey = await getApiKeyAsync();
-    if (!apiKey) {
-      console.log('[CaptchaSolver] Kein 2captcha API-Key konfiguriert.');
-      return;
-    }
     solving = true;
     try {
+      // Phase 0: Pre-Stage Männchen klicken (bevor BotGuard feuert)
+      if (clickPreStage()) {
+        await new Promise(function (r) { setTimeout(r, 500); });
+        solving = false;
+        return;
+      }
+
+      // Phase 0b: "Beginne Bot-Schutz Prüfung" Button im Blur klicken
+      if (document.querySelector('.bot-protection-blur')) {
+        if (clickStartButton()) {
+          await new Promise(function (r) { setTimeout(r, 1500); });
+          solving = false;
+          return;
+        }
+      }
+
+      var apiKey = await getApiKeyAsync();
+      if (!apiKey) {
+        console.log('[CaptchaSolver] Kein 2captcha API-Key konfiguriert.');
+        return;
+      }
+
       // Phase 1: reCAPTCHA (Bildauswahl)
       var sitekey = findSitekey();
       if (sitekey) {
@@ -192,6 +263,21 @@
     } finally {
       solving = false;
     }
+  }
+
+  var preStageObserver = null;
+
+  function startPreStageWatcher() {
+    if (preStageObserver) return;
+    var throttle = 0;
+    preStageObserver = new MutationObserver(function () {
+      var now = Date.now();
+      if (now - throttle < 1000) return;
+      throttle = now;
+      if (solving) return;
+      clickPreStage();
+    });
+    preStageObserver.observe(document.documentElement, { childList: true, subtree: true, attributes: true });
   }
 
   var domCheckInterval = null;
@@ -254,6 +340,8 @@
   pageWin.DSTools.triggerCaptchaSolve = attemptSolve;
 
   function init() {
+    startPreStageWatcher();
+    clickPreStage();
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', hookBotGuard);
     else hookBotGuard();
   }

@@ -84,11 +84,28 @@ function hqFactor(lvl) {
 }
  
 function buildTime(building, lvl, hqlvl) {
-    const special_factor = [0.01, 0.01, 0.16, 0.50, 0.96, 1.51, 2.16, 2.92, 3.83, 4.89];
-    const buld_time_factor = [1.259, 1.245, 1.233, 1.225, 1.218, 1.213, 1.209, 1.205, 1.203, 1.200, 1.198, 1.196, 1.195, 1.194, 1.193, 1.192, 1.191, 1.189, 1.189, 1.188];
-    const speed = parseFloat(SettingsHelper.getServerConf().speed) || 1;  // fetch when called
-    const base = SettingsHelper.getBuildConf()[building]['build_time'] / speed;
-    return (lvl > 10 ? buildTime(building, lvl - 1, hqlvl) * (Math.pow(1.2, (lvl - 1))) : special_factor[lvl - 1] * base) * hqFactor(hqlvl);
+    const base = SettingsHelper.getBuildConf()[building]['build_time'];
+    const hq = hqFactor(hqlvl);
+    return base * hq * getLevelFactor(lvl);
+}
+
+function getLevelFactor(lvl) {
+    const factors = [
+        0,
+        0.095972951067676, 0.095972951067676, 0.161516436165735, 0.50029139641408,
+        0.956686699233349, 1.5081900491495, 2.15872239973382, 2.92402139950873,
+        3.8264181497567, 4.89346144998492, 6.15818184983154, 7.65953289967186,
+        9.443819799993, 11.5652774999329, 14.0884324499439, 17.0893036499556,
+        20.6580694499856, 24.9012377499945, 29.945072799976, 35.9387667499927,
+        43.0592063999605, 51.5155386999649, 61.5553531499961, 73.4716182999805,
+        87.6113783496337, 104.384299199706, 124.275985499834, 147.860715649921,
+        175.81797914994, 208.950582949914
+    ];
+    if (lvl < 1) return factors[1] || 0.096;
+    if (lvl <= 30) return factors[lvl];
+    var val = factors[30];
+    for (var i = 31; i <= lvl; i++) val *= 1.188;
+    return val;
 }
 
  

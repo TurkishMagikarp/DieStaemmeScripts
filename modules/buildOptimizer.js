@@ -551,12 +551,14 @@
             var chosen = chooseAction(actions, req.targetBuilding);
             if (!chosen) break;
 
-            var wait = chosen.waitTime || 0;
-            if (wait > 0) {
-                applyProduction(state, wait);
-                state.time += wait;
+            var totalWait = 0;
+            if (chosen.waitTime > 0) {
+                totalWait += chosen.waitTime;
+                applyProduction(state, chosen.waitTime);
+                state.time += chosen.waitTime;
                 chosen.waitTime = calcWaitTime(state, chosen.cost);
                 if (chosen.waitTime > 0) {
+                    totalWait += chosen.waitTime;
                     applyProduction(state, chosen.waitTime);
                     state.time += chosen.waitTime;
                 }
@@ -578,7 +580,7 @@
                 fromLevel: (state.buildings[chosen.building] || 0) - 1,
                 toLevel: state.buildings[chosen.building] || 0,
                 startTime: state.time - bt,
-                waitTime: wait,
+                waitTime: totalWait,
                 buildTime: bt,
                 endTime: state.time,
                 cost: chosen.cost,
@@ -619,7 +621,7 @@
                 testTargets[mine] = curTarget + 1;
                 var testResult = simulateScenario(targetUnit, startRes, cloneObj(startBld), testTargets);
                 if (testResult.error) continue;
-                if (testResult.totalTime < bestTime - 60) {
+                if (testResult.totalTime < bestTime - 1) {
                     bestTime = testResult.totalTime;
                     bestResult = testResult;
                     mineTargets = testTargets;

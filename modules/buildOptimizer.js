@@ -267,8 +267,12 @@
         208.950582949914
     ];
 
-    function getLevelFactor(lvl) {
+    function getLevelFactor(lvl, building) {
         if (lvl < 1) return LEVEL_FACTOR[1] || 0.096;
+        if (lvl === 1 && building) {
+            var cfg = buildConf && buildConf[building];
+            if (cfg && parseInt(cfg.max_level, 10) === 1) return 0.095972951067676;
+        }
         if (lvl <= 30) return LEVEL_FACTOR[lvl];
         var val = LEVEL_FACTOR[30];
         for (var i = 31; i <= lvl; i++) {
@@ -287,7 +291,7 @@
         var ml = hqLvl != null ? parseInt(hqLvl) : (game_data.village.buildings.main || 0);
         ml = Math.max(0, ml);
         var hq = Math.pow(1.05, -ml);
-        return base * hq * getLevelFactor(lvl);
+        return base * hq * getLevelFactor(lvl, building);
     }
 
 

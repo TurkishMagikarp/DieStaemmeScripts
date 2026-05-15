@@ -86,10 +86,10 @@ function hqFactor(lvl) {
 function buildTime(building, lvl, hqlvl) {
     const base = SettingsHelper.getBuildConf()[building]['build_time'];
     const hq = hqFactor(hqlvl);
-    return base * hq * getLevelFactor(lvl);
+    return base * hq * getLevelFactor(lvl, building);
 }
 
-function getLevelFactor(lvl) {
+function getLevelFactor(lvl, building) {
     const factors = [
         0,
         0.01, 0.01, 0.161516436165735, 0.50029139641408,
@@ -102,6 +102,10 @@ function getLevelFactor(lvl) {
         175.81797914994, 208.950582949914
     ];
     if (lvl < 1) return factors[1] || 0.096;
+    if (lvl === 1 && building) {
+        const cfg = (typeof SettingsHelper !== 'undefined' && SettingsHelper.getBuildConf) ? SettingsHelper.getBuildConf()[building] : null;
+        if (cfg && parseInt(cfg.max_level, 10) === 1) return 0.095972951067676;
+    }
     if (lvl <= 30) return factors[lvl];
     var val = factors[30];
     for (var i = 31; i <= lvl; i++) val *= 1.188;

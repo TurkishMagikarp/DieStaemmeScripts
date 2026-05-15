@@ -8,24 +8,29 @@
   var GAP = 8;
   var ESTIMATE = 120;
 
-  function calcNextTop() {
+  function recalculateAll() {
     var top = BASE_TOP;
     for (var i = 0; i < registry.length; i++) {
       var r = registry[i];
-      if (r.el && r.el.offsetHeight > 0) {
-        top += r.el.offsetHeight + GAP;
+      r.top = top;
+      if (r.el) {
+        r.el.style.top = top + 'px';
+        top += (r.el.offsetHeight || ESTIMATE) + GAP;
       } else {
         top += ESTIMATE + GAP;
       }
     }
-    return top;
   }
 
   function getNextTop(panelId) {
     for (var i = 0; i < registry.length; i++) {
       if (registry[i].id === panelId) return registry[i].top;
     }
-    var top = calcNextTop();
+    var top = BASE_TOP;
+    for (var i = 0; i < registry.length; i++) {
+      var r = registry[i];
+      top += (r.el && r.el.offsetHeight > 0 ? r.el.offsetHeight : ESTIMATE) + GAP;
+    }
     registry.push({ id: panelId, top: top, el: null });
     return top;
   }
@@ -34,17 +39,24 @@
     for (var i = 0; i < registry.length; i++) {
       if (registry[i].id === panelId) {
         registry[i].el = el;
+        recalculateAll();
         return;
       }
     }
-    var top = calcNextTop();
+    var top = BASE_TOP;
+    for (var i = 0; i < registry.length; i++) {
+      var r = registry[i];
+      top += (r.el && r.el.offsetHeight > 0 ? r.el.offsetHeight : ESTIMATE) + GAP;
+    }
     registry.push({ id: panelId, top: top, el: el });
+    el.style.top = top + 'px';
   }
 
   function releaseSlot(panelId) {
     for (var i = 0; i < registry.length; i++) {
       if (registry[i].id === panelId) {
         registry.splice(i, 1);
+        recalculateAll();
         return;
       }
     }

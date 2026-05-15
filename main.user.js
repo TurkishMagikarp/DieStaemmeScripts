@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TurkishMagikarps Die Stämme Tool Collection
 // @namespace    https://github.com/TurkishMagikarp
-// @version      3.6.0
+// @version      3.6.1
 // @description  Erweitert die Die Stämme Erfahrung mit einigen Tools und Skripten
 // @author       TurkishMagikarp (Original: SpeckMich)
 // @connect      raw.githubusercontent.com

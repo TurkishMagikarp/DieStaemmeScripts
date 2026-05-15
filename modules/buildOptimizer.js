@@ -514,7 +514,6 @@
     function chooseAction(actions, targetBuilding) {
         if (!actions.length) return null;
         actions.sort(function (a, b) {
-            // Zielgebäude immer nach hinten (alle Voraussetzungen müssen erst fertig sein)
             if (a.building === targetBuilding && b.building !== targetBuilding) return 1;
             if (a.building !== targetBuilding && b.building === targetBuilding) return -1;
             if (a.isMain !== b.isMain) return a.isMain ? -1 : 1;
@@ -523,7 +522,16 @@
             if (Math.abs(a.waitTime - b.waitTime) > 1) return a.waitTime - b.waitTime;
             return a.buildTime - b.buildTime;
         });
-        return actions[0];
+        var best = actions[0];
+        if (best.waitTime > 60) {
+            for (var i = 1; i < actions.length; i++) {
+                var alt = actions[i];
+                if (alt.isMine && alt.waitTime === 0 && alt.buildTime < best.waitTime / 4) {
+                    return alt;
+                }
+            }
+        }
+        return best;
     }
 
     // =========================================================================

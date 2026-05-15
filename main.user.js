@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         SpeckMichs Die Stämme Tool Collection
+// @name         TurkishMagikarps Die Stämme Tool Collection
 // @namespace    https://github.com/TurkishMagikarp
 // @version      3.5.0
 // @description  Erweitert die Die Stämme Erfahrung mit einigen Tools und Skripten
@@ -1029,7 +1029,7 @@
             <td style="width:220px;font-weight:bold;">2captcha API-Key:</td>
             <td>
                 <input id="ds-setting-captchaApiKey"
-                       type="password"
+                       type="text"
                        class="vis input"
                        style="width:100%;"
                        value="${window.DS_USER_SETTINGS.captchaApiKey || ""}">

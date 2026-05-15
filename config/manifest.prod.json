@@ -36,6 +36,14 @@
         "compliance": "legal"
       },
       {
+        "url": "ui/positionManager.js",
+        "id": "positionManager",
+        "title": "Global: Panel-Positionierungs-Manager",
+        "desc": "Verhindert Überlappungen von Modul-Panels. Wird automatisch benötigt.",
+        "defaultEnabled": true,
+        "compliance": "legal"
+      },
+      {
         "url": "modules/captchaSolver.js",
         "id": "captchaSolver",
         "title": "Global: Auto-Captcha-Solver (2captcha)",

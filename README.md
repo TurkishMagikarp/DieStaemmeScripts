@@ -1,4 +1,4 @@
-# SpeckMichs Die Stämme Tool Collection
+# TurkishMagikarps Die Stämme Tool Collection
 
 Eine **modulare Userscript-Sammlung für Die Stämme**, die verschiedene Spielseiten gezielt erweitert und automatisiert.
 Alle Funktionen sind in einzelne Module aufgeteilt und können flexibel gesteuert werden.

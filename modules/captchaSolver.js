@@ -203,6 +203,29 @@
     console.log('[CaptchaSolver] BotGuard-Hook aktiv.');
   }
 
+  async function testApiKey() {
+    const apiKey = getApiKey();
+    if (!apiKey) {
+      console.warn('[CaptchaSolver] Kein API-Key gesetzt. Erst in ?screen=dstools eintragen und speichern.');
+      return;
+    }
+    try {
+      const resp = await fetch(`https://2captcha.com/res.php?key=${apiKey}&action=getbalance&json=1`);
+      const data = await resp.json();
+      if (data.status === 1) {
+        console.log(`[CaptchaSolver] API-Key VALIDE. Guthaben: ${data.request} USDC`);
+      } else {
+        console.error('[CaptchaSolver] API-Key UNGÜLTIG:', data.request);
+      }
+    } catch (e) {
+      console.error('[CaptchaSolver] Test fehlgeschlagen:', e);
+    }
+  }
+
+  win.DSTools = win.DSTools || {};
+  win.DSTools.testCaptchaSolver = testApiKey;
+  win.DSTools.triggerCaptchaSolve = attemptSolve;
+
   function init() {
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', hookBotGuard);

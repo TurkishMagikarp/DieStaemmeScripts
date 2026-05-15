@@ -82,7 +82,8 @@
   function createUnitsInputPanel() {
     const container = document.createElement("div");
     container.style.position = "fixed";
-    container.style.top = "150px";
+    var topVal = (window.DSUI?.position?.getNextTop('babaFarmerUnits') || 150) + 'px';
+    container.style.top = topVal;
     container.style.right = "20px";
     container.style.zIndex = 9999;
     container.style.backgroundColor = "#f9f9f9";
@@ -310,7 +311,8 @@
     const toggleButton = document.createElement("button");
     toggleButton.textContent = farmingEnabled ? "Farming: ON" : "Farming: OFF";
     toggleButton.style.position = "fixed";
-    toggleButton.style.top = "100px";
+    var btnTop = (window.DSUI?.position?.getNextTop('babaFarmerToggle') || 100) + 'px';
+    toggleButton.style.top = btnTop;
     toggleButton.style.right = "20px";
     toggleButton.style.zIndex = 9999;
     toggleButton.style.padding = "8px 12px";

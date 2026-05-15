@@ -247,7 +247,8 @@
     if (!panel) {
       panel = document.createElement('div');
       panel.id = 'ds-farm-forecast';
-      panel.style.cssText = 'position:fixed;top:200px;right:20px;z-index:9999;background:#f9f9f9;padding:12px;border:1px solid #ccc;border-radius:8px;box-shadow:0 0 5px rgba(0,0,0,.2);font-family:Verdana,sans-serif;font-size:12px;min-width:280px;max-width:320px;color:#333;';
+      var topVal = (window.DSUI?.position?.getNextTop('farmSpaceForecaster') || 200) + 'px';
+      panel.style.cssText = 'position:fixed;top:' + topVal + ';right:20px;z-index:9999;background:#f9f9f9;padding:12px;border:1px solid #ccc;border-radius:8px;box-shadow:0 0 5px rgba(0,0,0,.2);font-family:Verdana,sans-serif;font-size:12px;min-width:280px;max-width:320px;color:#333;';
       document.body.appendChild(panel);
     }
 

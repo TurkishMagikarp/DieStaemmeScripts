@@ -27,18 +27,19 @@
   // -----------------------------
   const POPUP = {
     enabled: true,
-    id: "2026-02-22-support-announcement-v3",
+    id: "2026-05-15-relaunch-v2",
     title: "DS-Tools - Ankündigung",
-    headline: `Danke für euren Support!`,
+    headline: `Meine Freunde, wir sind zurück!`,
     profileImage:
-      "https://pbs.twimg.com/profile_images/1456997417807716357/oX-R0v9l_400x400.png",
+      "https://img.pokemondb.net/artwork/large/magikarp.jpg",
     headerNote:
-      "Freut mich riesig, dass du das Tool aktiv nutzt.",
+      "Das Ding wird jetzt maintained. Props an den alten Entwickler SpeckMich für die geile Basis!",
     body: [
-      "Ich mache eine Die-Stämme-Pause, daher wird das Tool vermutlich vorerst nicht mehr aktiv weiterentwickelt. Die Zeit mit euch und die Entwicklung an dem Projekt hat mir wirklich viel Spaß gemacht.",
-      "Wenn ihr dringende Umsetzungswünsche oder Ideen habt, meldet euch gerne direkt bei mir über Discord oder auf Buy Me a Coffee. Über jede Unterstützung freue ich mich wirklich sehr.",
-      "Das Repository bleibt natürlich offen: Ihr könnt gerne auf GitHub beitragen, Pull Requests erstellen und Issues anlegen. Ich schaue mir PRs definitiv an.",
-      "Wenn euch das Tool hilft, teilt es gern mit Freunden, Familie und euren Stammesmitgliedern.",
+      "Als neue Features gibt es:",
+      "• Fake-Angriffs-Generator — Massenhaft Fake-Angriffe aus X Dörfern auf Y Ziele mit konfigurierbarem Zeit-Spread",
+      "• Farm-Space-Prognose — Zeigt Dir, wann Dein Farm-Space voll läuft, basierend auf aktuellen Rekrutierungs- und Bau-Aufträgen",
+      "• Auto-Captcha-Solver — Erkennt Bot-Schutz-Captchas automatisch und löst sie via 2captcha.com API (API-Key erforderlich)",
+      "Weitere Features sind in Planung!",
     ],
     links: [
       {
@@ -54,9 +55,9 @@
         href: "https://github.com/TurkishMagikarp/DieStaemmeScripts/issues",
       },
     ],
-    supportLink: "https://buymeacoffee.com/emotebot",
+    supportLink: "https://ko-fi.com/turkishmagikarp",
     footerNote:
-      "Danke für die gemeinsame Zeit. Dieses Popup erscheint nur einmal pro Ankündigung.",
+      "Dieses Popup erscheint nur einmal pro Ankündigung. Viel Spaß mit den neuen Tools!",
   };
 
   // FNV-1a 32bit
@@ -114,7 +115,7 @@
         <tr><td style="padding:8px 10px;">${body}</td></tr>
       </table>
       <div style="text-align:center; margin: 0 0 14px 0;">
-        <a href="${POPUP.supportLink}" target="_blank" rel="noopener noreferrer" style="font-size:16px; font-weight:700;">Buy me a coffee</a>
+        <a href="${POPUP.supportLink}" target="_blank" rel="noopener noreferrer" style="font-size:16px; font-weight:700;"><img src="https://storage.ko-fi.com/cdn/cup-border.png" alt="Ko-fi" style="width:20px;height:20px;vertical-align:middle;margin-right:4px;">Ko-fi</a>
       </div>
       <div style="margin: 0 0 10px 0; text-align:center;">${links}</div>
       <div style="font-size:12px; opacity:.85; margin-top:8px;">${POPUP.footerNote}</div>

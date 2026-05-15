@@ -47,7 +47,8 @@
     const container = document.createElement('div');
     container.id = 'dsu-auto-recruit';
     container.style.position = 'fixed';
-    container.style.top = '120px';
+    var topVal = (window.DSUI?.position?.getNextTop('autoRecruit') || 120) + 'px';
+    container.style.top = topVal;
     container.style.right = '20px';
     container.style.zIndex = 9999;
     container.style.backgroundColor = '#f9f9f9';

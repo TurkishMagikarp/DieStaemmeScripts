@@ -64,10 +64,17 @@
   }
 
   function noUnitsAvailable() {
-    var msg = document.querySelector('#plunder_list, .plunder_list, .farm_assistant, .am_farm_content, #content_value');
-    if (msg) {
-      var text = msg.textContent.toLowerCase();
-      if (text.includes('nicht genügend einheiten vorhanden')) return true;
+    var sources = [
+      document.querySelector('#plunder_list, .plunder_list, .farm_assistant, .am_farm_content, #content_value'),
+      document.querySelector('.popup_box_content, .popup_content, .popup_box, .dialog-content'),
+      document.querySelector('#popup_box, .popup_style'),
+    ];
+    for (var i = 0; i < sources.length; i++) {
+      if (sources[i] && sources[i].textContent.toLowerCase().includes('nicht genügend einheiten vorhanden')) return true;
+    }
+    var allPopupDivs = document.querySelectorAll('div[class*="popup"], div[id*="popup"]');
+    for (var j = 0; j < allPopupDivs.length; j++) {
+      if (allPopupDivs[j].textContent.toLowerCase().includes('nicht genügend einheiten vorhanden')) return true;
     }
     return false;
   }

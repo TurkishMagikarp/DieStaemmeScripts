@@ -642,7 +642,7 @@
     //  OVERLAY-UI
     // =========================================================================
 
-    function renderOverlay(result, targetUnit) {
+    function renderOverlay(result, targetUnit, diffTotal, resultMines) {
         removeOverlay();
 
         var worldName = game_data.world || '';
@@ -657,6 +657,8 @@
         html += 'Einheit: <b>' + (U_NAMES[targetUnit] || targetUnit) + '</b>';
         if (worldName) html += ' | Welt: <b>' + worldName + '</b>';
         if (result && !result.error) html += ' | Gesamt: <b>' + fmtTime(result.totalTime) + '</b>';
+        if (diffTotal !== null && diffTotal > 0) html += ' | <span style="color:#b91c1c;">Minen +1: +' + fmtTime(diffTotal) + ' langsamer</span>';
+        else if (diffTotal !== null) html += ' | <span style="color:#888;">Minen +1: kein Zeitgewinn</span>';
         html += '</div></div>';
         html += '<div style="display:flex;gap:4px;">';
         html += '<button class="dso-btn" onclick="this.closest(\'#dso-overlay\').remove()">✕ Schließen</button>';
@@ -700,6 +702,20 @@
             html += '<div style="margin-top:6px;display:flex;gap:4px;">';
             html += '<button class="dso-btn" onclick="DSO_copyBBCode()">📋 BBCode</button>';
             html += '<button class="dso-btn" onclick="DSO_copyCSV()">📊 CSV</button>';
+            // Vergleich: Mit Minen +1
+            if (resultMines && !resultMines.error && resultMines.steps && resultMines.steps.length && diffTotal !== 0) {
+                html += '<details style="margin-top:10px;"><summary style="cursor:pointer;font-weight:bold;font-size:12px;color:#666;">📋 Mit Minen +1 — ' + fmtTime(resultMines.totalTime) + ' (' + (diffTotal > 0 ? '+' : '') + fmtTime(diffTotal) + ')</summary>';
+                html += '<table class="dso-tbl" style="width:100%;border-collapse:collapse;font-size:10px;margin-top:4px;">';
+                html += '<tr style="background:#c1a264;color:#fff;"><th>#</th><th>Gebäude</th><th>Stufe</th><th>Start</th><th>Warten</th><th>Bauzeit</th><th>Ende</th><th>Kosten</th><th>Quest</th></tr>';
+                resultMines.steps.forEach(function (st) {
+                    html += '<tr><td>' + st.step + '</td><td>' + getBuildingName(st.building) + '</td><td>' + st.fromLevel + '→' + st.toLevel + '</td>';
+                    html += '<td>' + fmtTime(st.startTime) + '</td><td>' + (st.waitTime > 1 ? fmtTime(st.waitTime) : '-') + '</td>';
+                    html += '<td>' + fmtTime(st.buildTime) + '</td><td>' + fmtTime(st.endTime) + '</td>';
+                    html += '<td>' + fmtRes(st.cost) + '</td>';
+                    html += '<td>' + (st.questReduction && (st.questReduction.wood || st.questReduction.clay || st.questReduction.iron) ? '-' + (st.questReduction.wood || 0) + ' / -' + (st.questReduction.clay || 0) + ' / -' + (st.questReduction.iron || 0) : '-') + '</td></tr>';
+                });
+                html += '</table></details>';
+            }
             html += '</div>';
         }
 
@@ -808,7 +824,18 @@
             var startRes = currentResources();
             var startBld = currentBuildings();
             var result = optimize(targetUnit, startRes, startBld);
-            renderOverlay(result, targetUnit);
+            var diffTotal = null;
+            var resultMines = null;
+            var mineTargetsPlus = {
+                timber: (startBld.timber || 0) + 1,
+                clay: (startBld.clay || 0) + 1,
+                iron: (startBld.iron || 0) + 1
+            };
+            resultMines = simulateScenario(targetUnit, startRes, cloneObj(startBld), mineTargetsPlus);
+            if (resultMines && !resultMines.error) {
+                diffTotal = resultMines.totalTime - (result.totalTime || 0);
+            }
+            renderOverlay(result, targetUnit, diffTotal, resultMines);
             isComputing = false;
         });
     }

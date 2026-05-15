@@ -1,0 +1,341 @@
+{
+  "baseUrl": "http://localhost:8123",
+  "assetsBase": "http://localhost:8123",
+  "routes": {
+    "global": [
+      {
+        "url": "modules/incReminder.js",
+        "id": "incReminder",
+        "title": "Discord: Inc-Reminder",
+        "desc": "Sendet Discord-Nachricht bei neuen Angriffen. Vorraussetzung ist eine eingetragene Discord-Webhook-URL, siehe ganz oben.",
+        "defaultEnabled": false,
+        "compliance": "legal"
+      },
+      {
+        "url": "modules/baseUI.js",
+        "id": "baseUI",
+        "title": "Global: Visuelle Anpassungen",
+        "desc": "Acc Name statt Rangliste & Co",
+        "defaultEnabled": true,
+        "compliance": "legal"
+      },
+      {
+        "url": "modules/incOrganizer.js",
+        "id": "incOrganizer",
+        "title": "Global: Angriffe umbenennen und farblich markieren",
+        "desc": "Angriffe können über Buttons markiert werden.",
+        "defaultEnabled": true,
+        "compliance": "legal"
+      },
+      {
+        "url": "modules/notification.js",
+        "id": "notification",
+        "title": "Global: Benachrichtigungen über Änderungen an der Collection",
+        "desc": "PopUp, welches nach Updates über wichtige Dinge informiert.",
+        "defaultEnabled": true,
+        "compliance": "legal"
+      }
+    ],
+    "am_farm": [
+      {
+        "url": "modules/farmAssistantAuto.js",
+        "id": "farmAssistantAuto",
+        "title": "Farm-Assistent: Auto Farmer",
+        "desc": "Klickt durch den Farm-Assistent,",
+        "defaultEnabled": false,
+        "compliance": "illegal"
+      }
+    ],
+    "place": [
+      {
+        "url": "ui/toggleButton.js",
+        "id": "toggleButtonMap",
+        "title": "Versammlungsplatz: Toggle-Button",
+        "desc": "Schalter für Auto-Sender. Wird für Auto-Sender benötigt.",
+        "defaultEnabled": true,
+        "compliance": "legal"
+      },
+      {
+        "url": "ui/datePicker.js",
+        "id": "datePickerMap",
+        "title": "Versammlungsplatz: Datumswähler",
+        "desc": "Widget für Datums-/Zeitwahl auf der Karte. Wird für Auto-Sender benötigt.",
+        "defaultEnabled": true,
+        "compliance": "legal"
+      },
+      {
+        "url": "modules/confirmEnhancer.js",
+        "id": "confirmEnhancerMap",
+        "title": "Versammlungsplatz: Confirm Enhancer",
+        "desc": "Zeigt Angriffe in dem finalen Absende-Fenster. Vereinfacht das setzen von Angriffen an bestehende Angriffe von Stammesmitgliedern.",
+        "defaultEnabled": true,
+        "compliance": "legal"
+      },
+      {
+        "url": "modules/autoSender.js",
+        "id": "autoSender",
+        "title": "Versammlungsplatz: Auto-Sender",
+        "desc": "Automatisierte Sende-Flows. Wenn ein Angriff von DS-Ultimate kommt, wird dieser direkt weitergeklickt.",
+        "defaultEnabled": false,
+        "compliance": "illegal"
+      },
+      {
+        "url": "modules/massSupporter.js",
+        "id": "massSupporter",
+        "title": "Versammlungsplatz: Massen-Unterstützung",
+        "desc": "Viele Dörfer schnell unterstützen.",
+        "defaultEnabled": true,
+        "compliance": "legal"
+      },
+      {
+        "url": "modules/scavenger.calc.js",
+        "id": "calcScavenge",
+        "title": "Versammlungsplatz: Raubzug-Rechner",
+        "desc": "Berechner für Raubzug-Optimierung.",
+        "defaultEnabled": true,
+        "compliance": "legal"
+      },
+      {
+        "url": "modules/scavenger.auto.js",
+        "id": "autoScavenge",
+        "title": "Versammlungsplatz: Raubzug-Automatisierung",
+        "desc": "Automatisches Scavenging / Raubzüge.",
+        "defaultEnabled": false,
+        "compliance": "illegal"
+      },
+      {
+        "url": "modules/massScavenge/massScavenger.js",
+        "id": "calcMassScavenge",
+        "title": "Versammlungsplatz: Massen-Raubzug-Rechner",
+        "desc": "Berechner für Raubzug-Optimierung.",
+        "defaultEnabled": true,
+        "compliance": "illegal"
+      },
+      {
+        "url": "modules/babaFarmer.js",
+        "id": "babaFarmer",
+        "title": "Versammlungsplatz: Barbarendorf-Farmer",
+        "desc": "Automatisches Farmen von Barbarendörfern.",
+        "defaultEnabled": false,
+        "compliance": "illegal"
+      },
+      {
+        "url": "modules/massSupportFilter.js",
+        "id": "massSupportFilter",
+        "title": "Versammlungsplatz: Filter für Massensupport",
+        "desc": "In der Massensupport-Übersicht werden einige Filter hinzugefügt.",
+        "defaultEnabled": true,
+        "compliance": "legal"
+      }
+    ],
+    "train": [
+      {
+        "url": "modules/autoRecruit.js",
+        "id": "autoRecruit",
+        "title": "Rekrutierung: Automatisierte Rekrutierung",
+        "desc": "Automatisches Rekrutieren von Einheiten über Massen-Rekrutierung. ",
+        "defaultEnabled": false,
+        "compliance": "illegal"
+      }
+    ],
+    "map": [
+      {
+        "url": "ui/toggleButton.js",
+        "id": "toggleButtonMap",
+        "title": "Karte: Toggle-Button",
+        "desc": "Schalter für Auto-Sender. Wird für Auto-Sender benötigt.",
+        "defaultEnabled": true,
+        "compliance": "legal"
+      },
+      {
+        "url": "ui/datePicker.js",
+        "id": "datePickerMap",
+        "title": "Karte: Datumswähler",
+        "desc": "Widget für Datums-/Zeitwahl auf der Karte. Wird für Auto-Sender benötigt.",
+        "defaultEnabled": true,
+        "compliance": "legal"
+      },
+      {
+        "url": "modules/confirmEnhancer.js",
+        "id": "confirmEnhancerMap",
+        "title": "Karte: Confirm Enhancer",
+        "desc": "Zeigt Angriffe in dem finalen Absende-Fenster. Vereinfacht das setzen von Angriffen an bestehende Angriffe von Stammesmitgliedern.",
+        "defaultEnabled": true,
+        "compliance": "legal"
+      },
+      {
+        "url": "modules/lineMap.js",
+        "id": "lineMap",
+        "title": "Karte: Linien-Tool",
+        "desc": "Zeichnet Verbindungen/Markierungen auf der Karte. Dieses Modul deaktivieren, solltest du ein anderen User-Skript für deine Korridor-Karten benutzen",
+        "defaultEnabled": false,
+        "compliance": "legal"
+      },
+      {
+        "url": "modules/tooltip.js",
+        "id": "tooltip",
+        "title": "Karte: Tooltips",
+        "desc": "Zeigt unter der Karte ein kleines Tooltip mit den Tastenkürzeln für die einzelnen Karten-Module an.",
+        "defaultEnabled": true,
+        "compliance": "legal"
+      },
+      {
+        "url": "modules/pickVillages.js",
+        "id": "pickVillages",
+        "title": "Karte: Dörfer wählen und Koordinaten kopieren",
+        "desc": "Schnellauswahl von Zieldörfern direkt auf der Karte. Rechts erscheint ein Element, in welchem auch alle Dörfer eines Spielers gewählt werden können.",
+        "defaultEnabled": true,
+        "compliance": "legal"
+      },
+      {
+        "url": "modules/mapHoverHelper.js",
+        "id": "mapHoverHelper",
+        "title": "Karte: Erweiterte Hover-Infos",
+        "desc": "Beim Hover über ein Dorf werden zusätzliche Informationen aus dem letzten Bericht angezeigt.",
+        "defaultEnabled": false,
+        "compliance": "legal"
+      },
+      {
+        "url": "modules/mapDistanceCalculator.js",
+        "id": "mapDistanceCalculator",
+        "title": "Karte: Laufzeiten zwischen Dörfern berechnen",
+        "desc": "Modul zur Berechnung der Laufzeit auf der Karte",
+        "defaultEnabled": true,
+        "compliance": "legal"
+      }
+    ],
+    "overview_villages": [
+      {
+        "url": "modules/overviewCombined.js",
+        "id": "overviewCombined",
+        "title": "Übersicht: Kombiniert",
+        "desc": "Allgemein mehr Informationen in der Dorfübersicht. Mehr Spalten, Filter & Komfortfunktionen.",
+        "defaultEnabled": true,
+        "compliance": "legal"
+      },
+      {
+        "url": "modules/incRenamer.js",
+        "id": "incRenamer",
+        "title": "Übersicht-Eintreffend: Inc-Renamer",
+        "desc": "Benennt automatisch Incs um. Hierfür muss einfach nur Übersicht->Eintreffend geöffnet sein.",
+        "defaultEnabled": true,
+        "compliance": "illegal"
+      }
+    ],
+    "market": {
+      "resource_balancer": {
+        "url": "modules/resBalancer.js",
+        "id": "resBalancer",
+        "title": "Ressourcen-Balancer",
+        "desc": "Gleicht Lagerstände zwischen Dörfern aus.",
+        "defaultEnabled": true,
+        "compliance": "legal"
+      },
+      "global": {
+        "url": "menu/resBalancerMenuPoint.js",
+        "id": "resBalancerMenu",
+        "title": "Market-Menüpunkt",
+        "desc": "Menüeintrag/Integration für den Balancer.",
+        "defaultEnabled": true,
+        "compliance": "legal"
+      },
+      "call": {
+        "url": "modules/addUpRessources.js",
+        "id": "addUpRessources",
+        "title": "Rohstoffe aufaddieren",
+        "desc": "Rohstoffe vor dem anfordern aufaddieren.",
+        "defaultEnabled": true,
+        "compliance": "legal"
+      }
+    },
+    "attackPlannerEdit": [
+      {
+        "url": "modules/dsUltimateTimingSaver.js",
+        "id": "timingSaver",
+        "title": "DS-Ultimate: Timing Saver",
+        "desc": "Speichert/übernimmt Angriffs-Timings aus DS-Ultimate. Vorraussetzung für den DS-Ultimate Auto-Sender",
+        "defaultEnabled": false,
+        "compliance": "illegal"
+      },
+      {
+        "url": "modules/dsUltimateAutoSender.js",
+        "id": "ultimateAutoSender",
+        "title": "DS-Ultimate: Auto-Sender",
+        "desc": "Erlaubt das automatische senden von Angriffen über einen DS-Ultimate Angriffsplan. Benötigt Versammlungsplatz: Auto-Sender",
+        "defaultEnabled": false,
+        "compliance": "illegal"
+      }
+    ],
+    "attackPlannerTwForge": [
+      {
+        "url": "modules/twForgeAutoSender.js",
+        "id": "twForgeAutoSender",
+        "title": "TwForge: Auto-Sender",
+        "desc": "Automatisches Senden von TwForge Planer-Eintraegen. Nutzt den bestehenden Versammlungsplatz Auto-Sender + Confirm Enhancer.",
+        "defaultEnabled": true,
+        "compliance": "illegal"
+      }
+    ],
+    "info_player": {
+      "url": "modules/playerInfoTools.js",
+      "id": "playerInfoTools",
+      "title": "Spieler-Übersicht: Dörfer kopieren",
+      "desc": "Auf der Übersichtsseite eines Spielers die Koordinaten aller Dörfer kopieren.",
+      "defaultEnabled": true,
+      "compliance": "legal"
+    },
+    "info_village": [
+      {
+        "url": "modules/singleVillageSnipe.js",
+        "id": "singleVillageSnipe",
+        "title": "Dorf-Info: Snipe-Tool",
+        "desc": "Schnelles Snipen direkt von der Dorfinfoseite. Das reguläre Single-Village-Snipe als Button.",
+        "defaultEnabled": true,
+        "compliance": "legal"
+      },
+      {
+        "url": "modules/ressourceSenderSingle.js",
+        "id": "ressourceSenderSingle",
+        "title": "Dorf-Info: Ressourcen senden",
+        "desc": "Ressourcen an ein einzelnes Dorf senden.",
+        "defaultEnabled": true,
+        "compliance": "legal"
+      }
+    ],
+    "info_ally": {
+      "url": "modules/tribeStats.js",
+      "id": "tribeStats",
+      "title": "Stammes-Übersicht: Statistiken",
+      "desc": "Erlaubt das berechnen von Kennzahlen auf einer Stammes-Übersichts-Seite.",
+      "defaultEnabled": true,
+      "compliance": "legal"
+    },
+    "report": {
+      "url": "modules/reportInfo.js",
+      "id": "reportInfo",
+      "title": "Berichte: Zusätzliche Infos",
+      "desc": "Erweiterte Anzeigen im Bericht",
+      "defaultEnabled": false,
+      "compliance": "legal"
+    },
+    "main": [
+      {
+        "url": "modules/buildHelper.js",
+        "id": "buildHelper",
+        "title": "Hauptgebäude: Tipps und Extra-Infos",
+        "desc": "Zusätzlich Infos beim Ausbau von Gebäuden. Besonders nützlich für das Early-Game. Zeigt Smarte Hilfen beim Ausbau der Gebäude.",
+        "defaultEnabled": true,
+        "compliance": "legal"
+      },
+      {
+        "url": "modules/buildQueue.js",
+        "id": "buildQueue",
+        "title": "Hauptgebäude: Ausbau-Bot",
+        "desc": "Baut automatisch Gebäude aus. Besonders nützlich für das Early-Game.",
+        "defaultEnabled": false,
+        "compliance": "illegal"
+      }
+    ]
+  }
+}
+

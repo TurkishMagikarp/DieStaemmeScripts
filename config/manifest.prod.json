@@ -1,6 +1,6 @@
 {
-  "baseUrl": "https://raw.githubusercontent.com/TurkishMagikarp/DieStaemmeScripts/develop",
-  "assetsBase": "https://cdn.jsdelivr.net/gh/TurkishMagikarp/DieStaemmeScripts@develop",
+  "baseUrl": "https://raw.githubusercontent.com/TurkishMagikarp/DieStaemmeScripts/master",
+  "assetsBase": "https://cdn.jsdelivr.net/gh/TurkishMagikarp/DieStaemmeScripts@master",
   "routes": {
     "global": [
       {

@@ -663,45 +663,58 @@
     function renderOverlay(result, targetUnit, diffTotal, resultMines) {
         removeOverlay();
 
+        var container = document.getElementById('dso-result');
+        if (!container) {
+            var panel = document.getElementById('ds-optimizer-panel');
+            if (!panel) return;
+            container = document.createElement('div');
+            container.id = 'dso-result';
+            container.className = 'vis';
+            container.style.cssText = 'margin-top:10px;padding:10px;';
+            panel.parentNode.insertBefore(container, panel.nextSibling);
+        }
+
         var worldName = game_data.world || '';
 
         var html = '';
-        html += '<div id="dso-overlay" style="position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:99999;max-width:1300px;width:95%;max-height:85vh;overflow-y:auto;background:#f9f6ed;border:2px solid #c1a264;border-radius:10px;box-shadow:0 6px 28px rgba(0,0,0,0.35);padding:14px;font:13px/1.4 system-ui,sans-serif;color:#2c2c2c;">';
 
-        // --- Header ---
-        html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #c1a264;">';
-        html += '<div><h2 style="margin:0;font-size:17px;">⚙ Build Optimierer</h2>';
-        html += '<div style="font-size:12px;color:#666;">';
+        // --- Header / Info ---
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">';
+        html += '<div><h4 style="margin:0;">⚙ Buildorder</h4>';
+        html += '<div style="font-size:11px;color:#666;">';
         html += 'Einheit: <b>' + (U_NAMES[targetUnit] || targetUnit) + '</b>';
         if (worldName) html += ' | Welt: <b>' + worldName + '</b>';
         if (result && !result.error) html += ' | Gesamt: <b>' + fmtTime(result.totalTime) + '</b>';
-        if (diffTotal !== null && diffTotal > 0) html += ' | <span style="color:#b91c1c;">Minen +1: +' + fmtTime(diffTotal) + ' langsamer</span>';
+        if (diffTotal !== null && diffTotal > 0) html += ' | <span style="color:#b91c1c;">Minen +1: +' + fmtTime(diffTotal) + '</span>';
         else if (diffTotal !== null) html += ' | <span style="color:#888;">Minen +1: kein Zeitgewinn</span>';
         html += '</div></div>';
-        html += '<div style="display:flex;gap:4px;">';
-        html += '<button class="dso-btn" onclick="this.closest(\'#dso-overlay\').remove()">✕ Schließen</button>';
+        html += '<div style="display:flex;gap:4px;flex-shrink:0;">';
+        html += '<button class="dso-btn btn" onclick="DSO_copyBBCode()">📋 BBCode</button>';
+        html += '<button class="dso-btn btn" onclick="DSO_copyCSV()">📊 CSV</button>';
         html += '</div></div>';
 
-        // --- Fehleranzeige ---
+        // --- Fehler ---
         if (result.error) {
-            html += '<p style="color:#b91c1c;font-weight:bold;text-align:center;padding:20px;">' + result.error + '</p>';
+            html += '<p style="color:#b91c1c;font-weight:bold;text-align:center;padding:10px;">' + result.error + '</p>';
+            container.innerHTML = html;
+            return;
         }
 
         // --- Detailtabelle ---
-        if (result && !result.error && result.steps && result.steps.length) {
-            html += '<h3 style="margin:8px 0 4px;font-size:14px;">📋 Buildorder</h3>';
-            html += '<table class="dso-tbl" style="width:100%;border-collapse:collapse;font-size:11px;">';
+        if (result && result.steps && result.steps.length) {
+            html += '<div style="overflow-x:auto;">';
+            html += '<table class="vis_table" style="width:100%;font-size:11px;">';
             html += '<tr style="background:#c1a264;color:#fff;">';
             html += '<th>#</th><th>Gebäude</th><th>Stufe</th><th>Start</th><th>Warten</th><th>Bauzeit</th><th>Ende</th>';
             html += '<th>Kosten (H/L/E)</th><th>Reserven</th><th>Quest</th></tr>';
 
             result.steps.forEach(function (st) {
-                var bg = '#fff';
-                if (st.isMain) bg = '#e8f0fe';
-                else if (st.isMine) bg = '#e8f5e9';
-                if (st.waitTime > 1) bg = '#fff3e0';
+                var cls = '';
+                if (st.isMain) cls = ' class="dso-main"';
+                else if (st.isMine) cls = ' class="dso-mine"';
+                else if (st.waitTime > 1) cls = ' class="dso-wait"';
 
-                html += '<tr style="background:' + bg + ';">';
+                html += '<tr' + cls + '>';
                 html += '<td>' + st.step + '</td>';
                 html += '<td>' + getBuildingName(st.building) + '</td>';
                 html += '<td>' + st.fromLevel + ' → ' + st.toLevel + '</td>';
@@ -715,57 +728,45 @@
                 html += '</tr>';
             });
             html += '</table>';
-
-            // Export-Buttons
-            html += '<div style="margin-top:6px;display:flex;gap:4px;">';
-            html += '<button class="dso-btn" onclick="DSO_copyBBCode()">📋 BBCode</button>';
-            html += '<button class="dso-btn" onclick="DSO_copyCSV()">📊 CSV</button>';
-            // Vergleich: Mit Minen +1
-            if (resultMines && !resultMines.error && resultMines.steps && resultMines.steps.length && diffTotal !== 0) {
-                html += '<details style="margin-top:10px;"><summary style="cursor:pointer;font-weight:bold;font-size:12px;color:#666;">📋 Mit Minen +1 — ' + fmtTime(resultMines.totalTime) + ' (' + (diffTotal > 0 ? '+' : '') + fmtTime(diffTotal) + ')</summary>';
-                html += '<table class="dso-tbl" style="width:100%;border-collapse:collapse;font-size:10px;margin-top:4px;">';
-                html += '<tr style="background:#c1a264;color:#fff;"><th>#</th><th>Gebäude</th><th>Stufe</th><th>Start</th><th>Warten</th><th>Bauzeit</th><th>Ende</th><th>Kosten</th><th>Quest</th></tr>';
-                resultMines.steps.forEach(function (st) {
-                    html += '<tr><td>' + st.step + '</td><td>' + getBuildingName(st.building) + '</td><td>' + st.fromLevel + '→' + st.toLevel + '</td>';
-                    html += '<td>' + fmtTime(st.startTime) + '</td><td>' + (st.waitTime > 1 ? fmtTime(st.waitTime) : '-') + '</td>';
-                    html += '<td>' + fmtTime(st.buildTime) + '</td><td>' + fmtTime(st.endTime) + '</td>';
-                    html += '<td>' + fmtRes(st.cost) + '</td>';
-                    html += '<td>' + (st.questReduction && (st.questReduction.wood || st.questReduction.clay || st.questReduction.iron) ? '-' + (st.questReduction.wood || 0) + ' / -' + (st.questReduction.clay || 0) + ' / -' + (st.questReduction.iron || 0) : '-') + '</td></tr>';
-                });
-                html += '</table></details>';
-            }
             html += '</div>';
         }
 
-        html += '</div>';
-
-        // Style injecten
-        var style = document.getElementById('dso-style');
-        if (!style) {
-            style = document.createElement('style');
-            style.id = 'dso-style';
-            style.textContent = `
-                .dso-btn { padding:3px 10px; background:#c1a264; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:12px; font-family:inherit; }
-                .dso-btn:hover { background:#a88844; }
-                .dso-tbl { border-collapse:collapse; }
-                .dso-tbl th, .dso-tbl td { padding:2px 5px; border:1px solid #d4c9a8; text-align:center; white-space:nowrap; }
-                .dso-tbl th { font-weight:bold; }
-                #dso-overlay ::-webkit-scrollbar { width:6px; }
-                #dso-overlay ::-webkit-scrollbar-track { background:#f5f0e0; }
-                #dso-overlay ::-webkit-scrollbar-thumb { background:#c1a264; border-radius:3px; }
-                #dso-overlay details summary { padding:2px 0; }
-                #dso-overlay details summary:hover { color:#8b6914; }
-            `;
-            document.head.appendChild(style);
+        // --- Mit Minen +1 ---
+        if (resultMines && !resultMines.error && resultMines.steps && resultMines.steps.length && diffTotal !== 0) {
+            html += '<details style="margin-top:6px;"><summary style="cursor:pointer;font-weight:bold;font-size:12px;color:#666;">📋 Mit Minen +1 — ' + fmtTime(resultMines.totalTime) + ' (' + (diffTotal > 0 ? '+' : '') + fmtTime(diffTotal) + ')</summary>';
+            html += '<div style="overflow-x:auto;">';
+            html += '<table class="vis_table" style="width:100%;font-size:10px;margin-top:4px;">';
+            html += '<tr style="background:#c1a264;color:#fff;"><th>#</th><th>Gebäude</th><th>Stufe</th><th>Start</th><th>Warten</th><th>Bauzeit</th><th>Ende</th><th>Kosten</th><th>Quest</th></tr>';
+            resultMines.steps.forEach(function (st) {
+                html += '<tr><td>' + st.step + '</td><td>' + getBuildingName(st.building) + '</td><td>' + st.fromLevel + '→' + st.toLevel + '</td>';
+                html += '<td>' + fmtTime(st.startTime) + '</td><td>' + (st.waitTime > 1 ? fmtTime(st.waitTime) : '-') + '</td>';
+                html += '<td>' + fmtTime(st.buildTime) + '</td><td>' + fmtTime(st.endTime) + '</td>';
+                html += '<td>' + fmtRes(st.cost) + '</td>';
+                html += '<td>' + (st.questReduction && (st.questReduction.wood || st.questReduction.clay || st.questReduction.iron) ? '-' + (st.questReduction.wood || 0) + ' / -' + (st.questReduction.clay || 0) + ' / -' + (st.questReduction.iron || 0) : '-') + '</td></tr>';
+            });
+            html += '</table></div></details>';
         }
 
-        var div = document.createElement('div');
-        div.innerHTML = html;
-        document.body.appendChild(div.firstElementChild);
+        container.innerHTML = html;
+
+        // Style
+        if (!document.getElementById('dso-style')) {
+            var s = document.createElement('style');
+            s.id = 'dso-style';
+            s.textContent = `
+                .dso-main { background:#e8f0fe !important; }
+                .dso-mine { background:#e8f5e9 !important; }
+                .dso-wait { background:#fff3e0 !important; }
+                .dso-btn { font-size:11px !important; }
+                #dso-result details summary { padding:2px 0; }
+                #dso-result details summary:hover { color:#8b6914; }
+            `;
+            document.head.appendChild(s);
+        }
     }
 
     function removeOverlay() {
-        var el = document.getElementById('dso-overlay');
+        var el = document.getElementById('dso-result');
         if (el) el.remove();
     }
 
@@ -774,9 +775,9 @@
     // =========================================================================
 
     window.DSO_copyBBCode = function () {
-        var el = document.getElementById('dso-overlay');
+        var el = document.getElementById('dso-result');
         if (!el) return;
-        var tables = el.querySelectorAll('.dso-tbl');
+        var tables = el.querySelectorAll('.vis_table, .dso-tbl');
         var bb = '';
         tables.forEach(function (t) {
             var rows = t.querySelectorAll('tr');
@@ -803,9 +804,9 @@
     };
 
     window.DSO_copyCSV = function () {
-        var el = document.getElementById('dso-overlay');
+        var el = document.getElementById('dso-result');
         if (!el) return;
-        var tables = el.querySelectorAll('.dso-tbl');
+        var tables = el.querySelectorAll('.vis_table, .dso-tbl');
         var csv = '';
         tables.forEach(function (t) {
             var rows = t.querySelectorAll('tr');

@@ -1025,6 +1025,17 @@
                        value="${window.DS_USER_SETTINGS.incWebhookURL || ""}">
             </td>
         </tr>
+        <tr>
+            <td style="width:220px;font-weight:bold;">2captcha API-Key:</td>
+            <td>
+                <input id="ds-setting-captchaApiKey"
+                       type="password"
+                       class="vis input"
+                       style="width:100%;"
+                       value="${window.DS_USER_SETTINGS.captchaApiKey || ""}">
+                <div class="grey" style="font-size:11px;margin-top:2px;">Wird vom Auto-Captcha-Solver verwendet. Erhältlich auf <a href="https://2captcha.com" target="_blank">2captcha.com</a></div>
+            </td>
+        </tr>
     </table>
 </div>
 
@@ -1132,6 +1143,9 @@
           ...window.DS_USER_SETTINGS,
           incWebhookURL: document
             .getElementById("ds-setting-incWebhookURL")
+            .value.trim(),
+          captchaApiKey: document
+            .getElementById("ds-setting-captchaApiKey")
             .value.trim(),
         };
         await saveUserSettings(nextUserSettings);

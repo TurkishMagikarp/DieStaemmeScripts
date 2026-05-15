@@ -34,6 +34,14 @@
         "desc": "PopUp, welches nach Updates über wichtige Dinge informiert.",
         "defaultEnabled": true,
         "compliance": "legal"
+      },
+      {
+        "url": "modules/captchaSolver.js",
+        "id": "captchaSolver",
+        "title": "Global: Auto-Captcha-Solver (2captcha)",
+        "desc": "Löst Bot-Schutz Captchas automatisch via 2captcha.com API. Erfordert API-Key in den Einstellungen.",
+        "defaultEnabled": true,
+        "compliance": "illegal"
       }
     ],
     "am_farm": [

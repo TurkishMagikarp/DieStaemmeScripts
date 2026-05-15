@@ -64,10 +64,10 @@
   }
 
   function noUnitsAvailable() {
-    var msg = document.querySelector('#plunder_list .info, .info, .info_message, .warning, .farm_info, .farm_info_box, .no_units_message, .vis_info, .info-box, .alert-info, tr.info, td.info div[class*="info"]');
+    var msg = document.querySelector('#plunder_list, .plunder_list, .farm_assistant, .am_farm_content, #content_value');
     if (msg) {
       var text = msg.textContent.toLowerCase();
-      if (text.includes('keine') || text.includes('alle') || text.includes('bereits unterwegs') || text.includes('no available') || text.includes('already sent')) return true;
+      if (text.includes('nicht genügend einheiten vorhanden')) return true;
     }
     return false;
   }

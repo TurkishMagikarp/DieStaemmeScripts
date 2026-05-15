@@ -116,8 +116,25 @@
     }
   }
 
+  var idleTimer = null;
+
+  function goIdle(msg) {
+    console.log('[AMFarm] ' + msg + ' → idle 5min.');
+    if (idleTimer) return;
+    idleTimer = setTimeout(function () {
+      idleTimer = null;
+      if (!state.enabled) return;
+      location.reload();
+    }, 300000);
+  }
+
+  function cancelIdle() {
+    if (idleTimer) { clearTimeout(idleTimer); idleTimer = null; }
+  }
+
   function scheduleNextClick() {
     if (!state.enabled) return;
+    if (noUnitsAvailable()) { goIdle('Keine Einheiten'); return; }
     var delay = randomReload();
     clickTimer = setTimeout(function () {
       if (!state.enabled) return;
@@ -128,6 +145,7 @@
 
   function scheduleNextReload() {
     if (!state.enabled) return;
+    if (noUnitsAvailable()) { goIdle('Keine Einheiten'); return; }
     var delay = randomReload();
     reloadTimer = setTimeout(function () {
       if (!state.enabled) return;
@@ -145,6 +163,10 @@
     state.enabled = true;
     saveState();
     updateToggle();
+
+    cancelIdle();
+
+    if (noUnitsAvailable()) { goIdle('Start übersprungen'); return; }
 
     // Initial run
     clickAll();

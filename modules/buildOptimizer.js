@@ -319,20 +319,22 @@
         return getProduction(toInternalBuilding(building), building === 'timber' ? 'wood' : building === 'clay' ? 'stone' : 'iron');
     }
 
-    function questReward(costTable) {
-        var reduced = 0;
-        for (var j = 0; j < costTable.length; j++) {
-            if (j === 2) {
-                if (costTable[j] < 1000) reduced += 100;
-                else if (costTable[j] > 20000) reduced += 2000;
-                else reduced += Math.round(costTable[j] * 0.1);
-            } else {
-                if (costTable[j] < 1500) reduced += 150;
-                else if (costTable[j] > 30000) reduced += 2000;
-                else reduced += Math.round(costTable[j] * 0.1);
+    function getQuestReduction(cost) {
+        function reduceOne(val, isIron) {
+            if (isIron) {
+                if (val < 1000) return Math.min(val, 100);
+                if (val > 20000) return 2000;
+                return Math.round(val * 0.1);
             }
+            if (val < 1500) return Math.min(val, 150);
+            if (val > 30000) return 2000;
+            return Math.round(val * 0.1);
         }
-        return reduced;
+        return {
+            wood: reduceOne(cost.wood || 0, false),
+            clay: reduceOne(cost.clay || 0, false),
+            iron: reduceOne(cost.iron || 0, true)
+        };
     }
 
     // =========================================================================
@@ -449,9 +451,13 @@
         var prod = calcProduction(state);
         var maxWait = 0;
         var res = state.res || { wood: 0, clay: 0, iron: 0 };
-        if (prod.wood  > 0 && (res.wood  || 0) < (cost.wood  || 0)) maxWait = Math.max(maxWait, ((cost.wood  || 0) - (res.wood  || 0)) / (prod.wood  / 3600));
-        if (prod.clay  > 0 && (res.clay  || 0) < (cost.clay  || 0)) maxWait = Math.max(maxWait, ((cost.clay  || 0) - (res.clay  || 0)) / (prod.clay  / 3600));
-        if (prod.iron  > 0 && (res.iron  || 0) < (cost.iron  || 0)) maxWait = Math.max(maxWait, ((cost.iron  || 0) - (res.iron  || 0)) / (prod.iron  / 3600));
+        var qr = getQuestReduction(cost);
+        var needWood  = Math.max(0, (cost.wood  || 0) - qr.wood  - (res.wood  || 0));
+        var needClay  = Math.max(0, (cost.clay  || 0) - qr.clay  - (res.clay  || 0));
+        var needIron  = Math.max(0, (cost.iron  || 0) - qr.iron  - (res.iron  || 0));
+        if (prod.wood  > 0 && needWood  > 0) maxWait = Math.max(maxWait, needWood  / (prod.wood  / 3600));
+        if (prod.clay  > 0 && needClay  > 0) maxWait = Math.max(maxWait, needClay  / (prod.clay  / 3600));
+        if (prod.iron  > 0 && needIron  > 0) maxWait = Math.max(maxWait, needIron  / (prod.iron  / 3600));
         return maxWait;
     }
 
@@ -463,28 +469,7 @@
         state.res.iron  += p.iron  * hours;
     }
 
-    function applyQuestReward(state) {
-        var reward = { wood: 0, clay: 0, iron: 0 };
-        if (!state.quests) return reward;
-        Object.keys(state.quests).forEach(function (qId) {
-            var q = state.quests[qId];
-            if (q.done) return;
-            var met = true;
-            for (var condB in q.cond) {
-                if ((state.buildings[condB] || 0) < q.cond[condB]) { met = false; break; }
-            }
-            if (met) {
-                q.done = true;
-                reward.wood  += q.reward.wood  || 0;
-                reward.clay  += q.reward.clay  || 0;
-                reward.iron  += q.reward.iron  || 0;
-            }
-        });
-        state.res.wood  += reward.wood;
-        state.res.clay  += reward.clay;
-        state.res.iron  += reward.iron;
-        return reward;
-    }
+
 
     // =========================================================================
     //  GREEDY-SCHEDULER
@@ -553,17 +538,6 @@
             steps: []
         };
 
-        state.quests = {};
-        var qConfig = [
-            { id: 'q_main5',  cond: { main: 5 },   reward: { wood: 300, clay: 300, iron: 300 } },
-            { id: 'q_main10', cond: { main: 10 },  reward: { wood: 500, clay: 500, iron: 500 } },
-            { id: 'q_smith5', cond: { smith: 5 },  reward: { wood: 400, clay: 400, iron: 400 } },
-            { id: 'q_stable3',cond: { stable: 3 },  reward: { wood: 600, clay: 600, iron: 600 } },
-        ];
-        qConfig.forEach(function (q) {
-            state.quests[q.id] = { cond: cloneObj(q.cond), reward: cloneObj(q.reward), done: false };
-        });
-
         var maxSteps = 200;
         for (var sc = 0; sc < maxSteps; sc++) {
             var targetMet = true;
@@ -582,24 +556,22 @@
             if (wait > 0) {
                 applyProduction(state, wait);
                 state.time += wait;
-                applyQuestReward(state);
                 chosen.waitTime = calcWaitTime(state, chosen.cost);
                 if (chosen.waitTime > 0) {
                     applyProduction(state, chosen.waitTime);
                     state.time += chosen.waitTime;
-                    applyQuestReward(state);
                 }
             }
 
-            state.res.wood  = Math.max(0, (state.res.wood  || 0) - (chosen.cost.wood  || 0));
-            state.res.clay  = Math.max(0, (state.res.clay  || 0) - (chosen.cost.clay  || 0));
-            state.res.iron  = Math.max(0, (state.res.iron  || 0) - (chosen.cost.iron  || 0));
+            var qReduction = getQuestReduction(chosen.cost);
+            state.res.wood  = Math.max(0, (state.res.wood  || 0) - ((chosen.cost.wood  || 0) - qReduction.wood));
+            state.res.clay  = Math.max(0, (state.res.clay  || 0) - ((chosen.cost.clay  || 0) - qReduction.clay));
+            state.res.iron  = Math.max(0, (state.res.iron  || 0) - ((chosen.cost.iron  || 0) - qReduction.iron));
 
             var bt = chosen.buildTime;
             state.time += bt;
             applyProduction(state, bt);
             state.buildings[chosen.building] = (state.buildings[chosen.building] || 0) + 1;
-            var qReward = applyQuestReward(state);
 
             state.steps.push({
                 step: state.steps.length + 1,
@@ -611,8 +583,8 @@
                 buildTime: bt,
                 endTime: state.time,
                 cost: chosen.cost,
+                questReduction: qReduction,
                 resAfter: cloneObj(state.res),
-                questReward: qReward,
                 isMain: chosen.building === 'main',
                 isMine: chosen.building === 'timber' || chosen.building === 'clay' || chosen.building === 'iron',
             });
@@ -714,7 +686,7 @@
                 html += '<td>' + fmtTime(st.endTime) + '</td>';
                 html += '<td>' + fmtRes(st.cost) + '</td>';
                 html += '<td>' + fmtRes(st.resAfter) + '</td>';
-                html += '<td>' + (st.questReward && (st.questReward.wood || st.questReward.clay || st.questReward.iron) ? '+' + fmtRes(st.questReward) : '-') + '</td>';
+                html += '<td>' + (st.questReduction && (st.questReduction.wood || st.questReduction.clay || st.questReduction.iron) ? '-' + fmtRes(st.questReduction) : '-') + '</td>';
                 html += '</tr>';
             });
             html += '</table>';

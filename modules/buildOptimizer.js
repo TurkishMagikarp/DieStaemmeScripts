@@ -605,7 +605,7 @@
     // =========================================================================
 
     function optimize(targetUnit, startRes, startBld) {
-        var mineTargets = {};
+        var mineTargets = { timber: startBld.timber || 0, clay: startBld.clay || 0, iron: startBld.iron || 0 };
         var bestResult = simulateScenario(targetUnit, startRes, cloneObj(startBld), mineTargets);
         if (bestResult.error) return bestResult;
         var bestTime = bestResult.totalTime;
@@ -687,7 +687,7 @@
                 html += '<td>' + fmtTime(st.endTime) + '</td>';
                 html += '<td>' + fmtRes(st.cost) + '</td>';
                 html += '<td>' + fmtRes(st.resAfter) + '</td>';
-                html += '<td>' + (st.questReduction && (st.questReduction.wood || st.questReduction.clay || st.questReduction.iron) ? '-' + fmtRes(st.questReduction) : '-') + '</td>';
+                html += '<td>' + (st.questReduction && (st.questReduction.wood || st.questReduction.clay || st.questReduction.iron) ? '-' + (st.questReduction.wood || 0) + ' / -' + (st.questReduction.clay || 0) + ' / -' + (st.questReduction.iron || 0) : '-') + '</td>';
                 html += '</tr>';
             });
             html += '</table>';

@@ -251,20 +251,18 @@
       console.warn('[CaptchaSolver] Kein API-Key gesetzt.');
       return;
     }
-    console.log('[CaptchaSolver] Starte Test-Captcha (2captcha Testbild)...');
-    var testUrl = 'https://2captcha.com/dist/web/054bfa9962f30d1c3ca0d392c1f7e53f.png';
+    console.log('[CaptchaSolver] Starte Test-Captcha (Canvas-Generiert)...');
     try {
-      var resp = await fetch(testUrl);
-      var blob = await resp.blob();
-      var base64 = await new Promise(function (resolve, reject) {
-        var r = new FileReader();
-        r.onloadend = function () { resolve(r.result.split(',')[1]); };
-        r.onerror = reject;
-        r.readAsDataURL(blob);
-      });
+      var c = document.createElement('canvas');
+      c.width = 200; c.height = 60;
+      var ctx = c.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 200, 60);
+      ctx.font = '30px Arial'; ctx.fillStyle = '#333';
+      ctx.fillText('test42', 40, 42);
+      var base64 = c.toDataURL('image/png').split(',')[1];
       var result = await solveWith2Captcha(base64, apiKey);
       if (result) {
-        console.log('[CaptchaSolver] Test BESTANDEN! Gelöstes Captcha:', result);
+        console.log('[CaptchaSolver] Test BESTANDEN! 2captcha Antwort:', result);
       } else {
         console.error('[CaptchaSolver] Test FEHLGESCHLAGEN – kein Ergebnis.');
       }

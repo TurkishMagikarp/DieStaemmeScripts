@@ -81,11 +81,6 @@
 
   function createUnitsInputPanel() {
     const container = document.createElement("div");
-    container.style.position = "fixed";
-    var topVal = (window.DSUI?.position?.getNextTop('babaFarmerUnits') || 150) + 'px';
-    container.style.top = topVal;
-    container.style.right = "20px";
-    container.style.zIndex = 9999;
     container.style.backgroundColor = "#f9f9f9";
     container.style.padding = "10px";
     container.style.border = "1px solid #ccc";
@@ -165,17 +160,12 @@
 
     container.appendChild(delayInput);
 
-  document.body.appendChild(container);
-  if (window.DSUI?.position?.setPanelEl) window.DSUI.position.setPanelEl('babaFarmerUnits', container);
+  (window.DSUI?.position?.appendPanel || document.body.appendChild.bind(document.body))(container);
   }
 
   function createToggleButton() {
     const toggleButton = document.createElement("button");
     toggleButton.textContent = farmingEnabled ? "Farming: ON" : "Farming: OFF";
-    toggleButton.style.position = "fixed";
-    var btnTop = (window.DSUI?.position?.getNextTop('babaFarmerToggle') || 100) + 'px';
-    toggleButton.style.top = btnTop;
-    toggleButton.style.right = "20px";
     toggleButton.style.zIndex = 9999;
     toggleButton.style.padding = "8px 12px";
     toggleButton.style.backgroundColor = farmingEnabled ? "#4CAF50" : "#f44336";
@@ -202,8 +192,7 @@
       }
     });
 
-    document.body.appendChild(toggleButton);
-    if (window.DSUI?.position?.setPanelEl) window.DSUI.position.setPanelEl('babaFarmerToggle', toggleButton);
+    (window.DSUI?.position?.appendPanel || document.body.appendChild.bind(document.body))(toggleButton);
   }
 
   function observeConfirmButton() {

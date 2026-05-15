@@ -3,69 +3,41 @@
   if (window.__DSUIPosLoaded) return;
   window.__DSUIPosLoaded = true;
 
-  var registry = [];
-  var BASE_TOP = 80;
-  var GAP = 8;
-  var ESTIMATE = 120;
-
-  function recalculateAll() {
-    var top = BASE_TOP;
-    for (var i = 0; i < registry.length; i++) {
-      var r = registry[i];
-      r.top = top;
-      if (r.el) {
-        r.el.style.top = top + 'px';
-        top += (r.el.offsetHeight || ESTIMATE) + GAP;
-      } else {
-        top += ESTIMATE + GAP;
-      }
-    }
+  function getContainer() {
+    var c = document.getElementById('ds-panel-container');
+    if (c) return c;
+    c = document.createElement('div');
+    c.id = 'ds-panel-container';
+    c.style.cssText = 'position:fixed;top:80px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;align-items:flex-end;';
+    document.body.appendChild(c);
+    return c;
   }
 
-  function getNextTop(panelId) {
-    for (var i = 0; i < registry.length; i++) {
-      if (registry[i].id === panelId) return registry[i].top;
+  function appendPanel(el) {
+    var c = getContainer();
+    el.style.position = 'relative';
+    el.style.top = 'auto';
+    el.style.right = 'auto';
+    el.style.left = 'auto';
+    el.style.bottom = 'auto';
+    c.appendChild(el);
+  }
+
+  function getNextTop() {
+    var top = 80;
+    var c = document.getElementById('ds-panel-container');
+    if (c) {
+      var children = c.children;
+      for (var i = 0; i < children.length; i++) {
+        top += (children[i].offsetHeight || 120) + 8;
+      }
     }
-    var top = BASE_TOP;
-    for (var i = 0; i < registry.length; i++) {
-      var r = registry[i];
-      top += (r.el && r.el.offsetHeight > 0 ? r.el.offsetHeight : ESTIMATE) + GAP;
-    }
-    registry.push({ id: panelId, top: top, el: null });
     return top;
-  }
-
-  function setPanelEl(panelId, el) {
-    for (var i = 0; i < registry.length; i++) {
-      if (registry[i].id === panelId) {
-        registry[i].el = el;
-        recalculateAll();
-        return;
-      }
-    }
-    var top = BASE_TOP;
-    for (var i = 0; i < registry.length; i++) {
-      var r = registry[i];
-      top += (r.el && r.el.offsetHeight > 0 ? r.el.offsetHeight : ESTIMATE) + GAP;
-    }
-    registry.push({ id: panelId, top: top, el: el });
-    el.style.top = top + 'px';
-  }
-
-  function releaseSlot(panelId) {
-    for (var i = 0; i < registry.length; i++) {
-      if (registry[i].id === panelId) {
-        registry.splice(i, 1);
-        recalculateAll();
-        return;
-      }
-    }
   }
 
   window.DSUI = window.DSUI || {};
   window.DSUI.position = {
+    appendPanel: appendPanel,
     getNextTop: getNextTop,
-    setPanelEl: setPanelEl,
-    releaseSlot: releaseSlot,
   };
 })();

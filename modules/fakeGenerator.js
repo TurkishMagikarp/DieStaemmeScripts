@@ -148,8 +148,7 @@
     if (document.getElementById('ds-fakegen')) return;
     var panel = document.createElement('div');
     panel.id = 'ds-fakegen';
-    var topPos = (window.DSUI?.position?.getNextTop('fakeGenerator') || 150) + 'px';
-    panel.style.cssText = 'position:fixed;top:' + topPos + ';right:20px;z-index:9999;background:#f9f9f9;padding:12px;border:1px solid #ccc;border-radius:8px;box-shadow:0 0 5px rgba(0,0,0,.2);font-family:Verdana,sans-serif;font-size:12px;min-width:300px;max-width:340px;color:#333;max-height:80vh;overflow-y:auto;';
+    panel.style.cssText = 'z-index:9999;background:#f9f9f9;padding:12px;border:1px solid #ccc;border-radius:8px;box-shadow:0 0 5px rgba(0,0,0,.2);font-family:Verdana,sans-serif;font-size:12px;min-width:300px;max-width:340px;color:#333;max-height:80vh;overflow-y:auto;';
 
     var html = '';
     html += '<div style="font-weight:bold;font-size:14px;margin-bottom:6px;border-bottom:1px solid #ddd;padding-bottom:4px;">Fake-Generator</div>';
@@ -196,8 +195,7 @@
     html += '</div>';
 
     panel.innerHTML = html;
-    document.body.appendChild(panel);
-    if (window.DSUI?.position?.setPanelEl) window.DSUI.position.setPanelEl('fakeGenerator', panel);
+    (window.DSUI?.position?.appendPanel || document.body.appendChild.bind(document.body))(panel);
 
     document.getElementById('ds-fg-start').addEventListener('click', startFaking);
     document.getElementById('ds-fg-stop').addEventListener('click', stopFaking);

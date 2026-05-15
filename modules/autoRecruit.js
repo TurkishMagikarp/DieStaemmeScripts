@@ -46,11 +46,6 @@
 
     const container = document.createElement('div');
     container.id = 'dsu-auto-recruit';
-    container.style.position = 'fixed';
-    var topVal = (window.DSUI?.position?.getNextTop('autoRecruit') || 120) + 'px';
-    container.style.top = topVal;
-    container.style.right = '20px';
-    container.style.zIndex = 9999;
     container.style.backgroundColor = '#f9f9f9';
     container.style.padding = '10px';
     container.style.border = '1px solid #ccc';
@@ -95,8 +90,7 @@
     container.appendChild(toggleButton);
     container.appendChild(delayLabel);
     container.appendChild(delayInput);
-    document.body.appendChild(container);
-    if (window.DSUI?.position?.setPanelEl) window.DSUI.position.setPanelEl('autoRecruit', container);
+    (window.DSUI?.position?.appendPanel || document.body.appendChild.bind(document.body))(container);
   }
 
   // ---- Core actions (all gated) --------------------------------------------

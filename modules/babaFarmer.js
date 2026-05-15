@@ -68,6 +68,8 @@
   let radius = parseInt(localStorage.getItem("farmingRadius")) || 5;
   let farmingIntervalDelay =
     parseInt(localStorage.getItem("farmingDelay")) || 250;
+  let farmingDelayMax =
+    parseInt(localStorage.getItem("farmingDelayMax")) || 500;
 
   let farmingEnabled = JSON.parse(localStorage.getItem("farmingEnabled"));
   if (farmingEnabled === null) farmingEnabled = false;
@@ -141,24 +143,50 @@
     container.appendChild(radiusInput);
 
     const delayTitle = document.createElement("div");
-    delayTitle.textContent = "Delay";
+    delayTitle.textContent = "Delay Range (ms)";
     delayTitle.style.marginTop = "10px";
     delayTitle.style.fontWeight = "bold";
     container.appendChild(delayTitle);
 
-    const delayInput = document.createElement("input");
-    delayInput.type = "number";
-    delayInput.value = farmingIntervalDelay;
-    delayInput.min = 1;
-    delayInput.style.width = "50px";
-    delayInput.style.marginTop = "5px";
+    const delayRow = document.createElement("div");
+    delayRow.style.display = "flex";
+    delayRow.style.alignItems = "center";
+    delayRow.style.gap = "6px";
+    delayRow.style.marginTop = "5px";
 
-    delayInput.addEventListener("change", () => {
-      farmingIntervalDelay = parseInt(delayInput.value) || 250;
+    const minLabel = document.createElement("span");
+    minLabel.textContent = "Min:";
+    minLabel.style.fontSize = "12px";
+    delayRow.appendChild(minLabel);
+
+    const delayMinInput = document.createElement("input");
+    delayMinInput.type = "number";
+    delayMinInput.value = farmingIntervalDelay;
+    delayMinInput.min = 1;
+    delayMinInput.style.width = "55px";
+    delayMinInput.addEventListener("change", () => {
+      farmingIntervalDelay = parseInt(delayMinInput.value) || 250;
       localStorage.setItem("farmingDelay", farmingIntervalDelay.toString());
     });
+    delayRow.appendChild(delayMinInput);
 
-    container.appendChild(delayInput);
+    const maxLabel = document.createElement("span");
+    maxLabel.textContent = "Max:";
+    maxLabel.style.fontSize = "12px";
+    delayRow.appendChild(maxLabel);
+
+    const delayMaxInput = document.createElement("input");
+    delayMaxInput.type = "number";
+    delayMaxInput.value = farmingDelayMax;
+    delayMaxInput.min = 1;
+    delayMaxInput.style.width = "55px";
+    delayMaxInput.addEventListener("change", () => {
+      farmingDelayMax = parseInt(delayMaxInput.value) || 500;
+      localStorage.setItem("farmingDelayMax", farmingDelayMax.toString());
+    });
+    delayRow.appendChild(delayMaxInput);
+
+    container.appendChild(delayRow);
 
   (window.DSUI?.position?.appendPanel || document.body.appendChild.bind(document.body))(container);
   }
@@ -277,26 +305,41 @@
     }
   }
 
+  function getJitterDelay() {
+    var min = Math.min(farmingIntervalDelay, farmingDelayMax);
+    var max = Math.max(farmingIntervalDelay, farmingDelayMax);
+    return min + Math.random() * (max - min);
+  }
+
   async function startFarming() {
     if (!farmingInterval) {
       farmBarbarians().catch((err) =>
         console.error("[BabaFarmer] farmBarbarians() failed:", err)
       );
 
-      farmingInterval = setInterval(async () => {
-        if (!farmingEnabled) return;
-        if (guardAction) await guardAction("baba_loop_tick");
-
-        farmBarbarians().catch((err) =>
-          console.error("[BabaFarmer] farmBarbarians() failed:", err)
-        );
-      }, farmingIntervalDelay);
+      scheduleNextFarm();
     }
+  }
+
+  function scheduleNextFarm() {
+    if (!farmingEnabled) return;
+    var delay = getJitterDelay();
+    if (guardAction) guardAction("baba_schedule_tick");
+    farmingInterval = setTimeout(async () => {
+      if (!farmingEnabled) { farmingInterval = null; return; }
+      if (guardAction) await guardAction("baba_loop_tick");
+
+      farmBarbarians().catch((err) =>
+        console.error("[BabaFarmer] farmBarbarians() failed:", err)
+      );
+
+      scheduleNextFarm();
+    }, delay);
   }
 
   function stopFarming() {
     if (farmingInterval) {
-      clearInterval(farmingInterval);
+      clearTimeout(farmingInterval);
       farmingInterval = null;
     }
     console.log("[BabaFarmer] Farming stopped.");

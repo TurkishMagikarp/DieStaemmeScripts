@@ -3,7 +3,7 @@
   if (window.__dsCaptchaSolverLoaded) return;
   window.__dsCaptchaSolverLoaded = true;
 
-  const win = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
+  const win = window;
 
   const SETTINGS_KEY = 'dsToolsUserSettings';
 
@@ -28,11 +28,28 @@
 
   let solving = false;
 
+  async function readSettingsFromGM() {
+    try {
+      if (typeof GM !== 'undefined' && GM.getValue) {
+        return await GM.getValue(SETTINGS_KEY, {});
+      }
+    } catch {}
+    try { return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}; } catch {}
+    return {};
+  }
+
   function getApiKey() {
     try {
       const s = win.DS_USER_SETTINGS || {};
       return s.captchaApiKey || '';
     } catch { return ''; }
+  }
+
+  async function getApiKeyAsync() {
+    var key = getApiKey();
+    if (key) return key;
+    var settings = await readSettingsFromGM();
+    return settings.captchaApiKey || '';
   }
 
   function isEnabled() {
@@ -124,7 +141,7 @@
     if (solving) return;
     if (!isEnabled()) return;
 
-    const apiKey = getApiKey();
+    const apiKey = await getApiKeyAsync();
     if (!apiKey) {
       console.log('[CaptchaSolver] Kein 2captcha API-Key konfiguriert → Settings-Seite offen (screen=dstools)');
       return;
@@ -204,7 +221,12 @@
   }
 
   async function testApiKey() {
-    const apiKey = getApiKey();
+    var fromMem = getApiKey();
+    var fromGM = await getApiKeyAsync();
+    console.log('[CaptchaSolver] DEBUG — Key aus window.DS_USER_SETTINGS:', JSON.stringify(fromMem));
+    console.log('[CaptchaSolver] DEBUG — Key aus GM Storage:', JSON.stringify(fromGM));
+    console.log('[CaptchaSolver] DEBUG — DS_USER_SETTINGS:', JSON.stringify(win.DS_USER_SETTINGS));
+    const apiKey = fromGM;
     if (!apiKey) {
       console.warn('[CaptchaSolver] Kein API-Key gesetzt. Erst in ?screen=dstools eintragen und speichern.');
       return;
@@ -223,7 +245,7 @@
   }
 
   async function testFullFlow() {
-    const apiKey = getApiKey();
+    const apiKey = await getApiKeyAsync();
     if (!apiKey) {
       console.warn('[CaptchaSolver] Kein API-Key gesetzt.');
       return;

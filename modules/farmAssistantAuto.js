@@ -63,8 +63,24 @@
     return true;
   }
 
+  function noUnitsAvailable() {
+    var msg = document.querySelector('#plunder_list .info, .info, .info_message, .warning, .farm_info, .farm_info_box, .no_units_message, .vis_info, .info-box, .alert-info, tr.info, td.info div[class*="info"]');
+    if (msg) {
+      var text = msg.textContent.toLowerCase();
+      if (text.includes('keine') || text.includes('alle') || text.includes('bereits unterwegs') || text.includes('no available') || text.includes('already sent')) return true;
+    }
+    return false;
+  }
+
   async function clickAll() {
+    if (noUnitsAvailable()) {
+      console.log('[AMFarm] Keine Einheiten verfügbar → stoppe.');
+      stop();
+      return;
+    }
+
     const rows = [...document.querySelectorAll('#plunder_list tr[id^="village_"]')];
+    var clicked = 0;
 
     for (const row of rows) {
       if (!state.enabled) return;
@@ -83,6 +99,7 @@
       }
 
       if (!btnToClick) continue;
+      clicked++;
 
       if (guardAction) {
         guardAction(() => {
@@ -93,6 +110,11 @@
       }
 
       await new Promise(r => setTimeout(r, randomDelay()));
+    }
+
+    if (clicked === 0) {
+      console.log('[AMFarm] Kein einziger Button klickbar → stoppe.');
+      stop();
     }
   }
 

@@ -1,5 +1,6 @@
 (function () {
   'use strict';
+  console.log('[CaptchaSolver] MODUL WIRD EVALED');
   if (window.__dsCaptchaSolverLoaded) return;
   window.__dsCaptchaSolverLoaded = true;
 

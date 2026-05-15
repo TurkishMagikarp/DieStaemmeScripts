@@ -98,32 +98,43 @@
     });
   }
 
-  async function solveWith2Captcha(base64, apiKey) {
-    const formData = new FormData();
-    formData.append('method', 'base64');
-    formData.append('key', apiKey);
-    formData.append('body', base64);
-    formData.append('json', '1');
+  function gmRequest(method, url, data) {
+    return new Promise(function (resolve, reject) {
+      if (typeof GM_xmlhttpRequest === 'function') {
+        GM_xmlhttpRequest({
+          method: method,
+          url: url,
+          data: data || null,
+          headers: data ? { 'Content-Type': 'application/x-www-form-urlencoded' } : {},
+          onload: function (r) { resolve(r.responseText); },
+          onerror: reject,
+          ontimeout: function () { reject(new Error('timeout')); },
+          timeout: 30000,
+        });
+      } else {
+        fetch(url, { method: method, body: data, mode: 'no-cors' })
+          .then(function (r) { return r.text(); })
+          .then(resolve)
+          .catch(reject);
+      }
+    });
+  }
 
-    let resp;
+  async function solveWith2Captcha(base64, apiKey) {
+    var body = 'method=base64&key=' + encodeURIComponent(apiKey) + '&body=' + encodeURIComponent(base64) + '&json=1';
     try {
-      resp = await fetch('https://2captcha.com/in.php', {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await resp.json();
+      var respText = await gmRequest('POST', 'https://2captcha.com/in.php', body);
+      var data = JSON.parse(respText);
       if (data.status !== 1) {
         console.error('[CaptchaSolver] 2captcha upload failed:', data.error || data.request);
         return null;
       }
-      const captchaId = data.request;
+      var captchaId = data.request;
 
-      for (let i = 0; i < 90; i++) {
-        await new Promise((r) => setTimeout(r, 3000));
-        const pollResp = await fetch(
-          `https://2captcha.com/res.php?key=${apiKey}&action=get&id=${captchaId}&json=1`
-        );
-        const pollData = await pollResp.json();
+      for (var i = 0; i < 90; i++) {
+        await new Promise(function (r) { setTimeout(r, 3000); });
+        var pollText = await gmRequest('GET', 'https://2captcha.com/res.php?key=' + encodeURIComponent(apiKey) + '&action=get&id=' + encodeURIComponent(captchaId) + '&json=1');
+        var pollData = JSON.parse(pollText);
         if (pollData.status === 1) return pollData.request;
         if (pollData.request && pollData.request !== 'CAPCHA_NOT_READY') {
           console.error('[CaptchaSolver] 2captcha error:', pollData.request);
@@ -233,10 +244,10 @@
       return;
     }
     try {
-      const resp = await fetch(`https://2captcha.com/res.php?key=${apiKey}&action=getbalance&json=1`);
-      const data = await resp.json();
+      var respText = await gmRequest('GET', 'https://2captcha.com/res.php?key=' + encodeURIComponent(apiKey) + '&action=getbalance&json=1');
+      var data = JSON.parse(respText);
       if (data.status === 1) {
-        console.log(`[CaptchaSolver] API-Key VALIDE. Guthaben: ${data.request} USDC`);
+        console.log('[CaptchaSolver] API-Key VALIDE. Guthaben: ' + data.request + ' USDC');
       } else {
         console.error('[CaptchaSolver] API-Key UNGÜLTIG:', data.request);
       }

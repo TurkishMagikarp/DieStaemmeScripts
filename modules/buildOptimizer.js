@@ -475,13 +475,14 @@
     //  GREEDY-SCHEDULER
     // =========================================================================
 
-    function getActions(state, required) {
+    function getActions(state, required, mineTargets) {
         var actions = [];
         var isMine = function (b) { return b === 'timber' || b === 'clay' || b === 'iron'; };
 
         for (var bId in state.buildings) {
             var curLvl = state.buildings[bId] || 0;
             var tgt = required[bId] || 0;
+            if (isMine(bId) && mineTargets) tgt = Math.max(tgt, mineTargets[bId] || 0);
             var nextLvl = curLvl + 1;
             if (nextLvl > tgt) continue;
 
@@ -491,8 +492,6 @@
                 if ((state.buildings[preqs[pi].building] || 0) < preqs[pi].level) { met = false; break; }
             }
             if (!met) continue;
-
-            if (isMine(bId) && !required[bId]) continue;
 
             var cost = getBuildCostAll(bId, nextLvl);
             var bt = getBuildTime(bId, nextLvl, state.buildings.main || 1);
@@ -527,7 +526,7 @@
     //  SIMULATION
     // =========================================================================
 
-    function simulateScenario(targetUnit, startRes, startBld) {
+    function simulateScenario(targetUnit, startRes, startBld, mineTargets) {
         var req = resolveRequirements(targetUnit);
         if (req.error) return { error: req.error };
 
@@ -546,7 +545,7 @@
             }
             if (targetMet) break;
 
-            var actions = getActions(state, required);
+            var actions = getActions(state, required, mineTargets);
             if (!actions.length) break;
 
             var chosen = chooseAction(actions, req.targetBuilding);
@@ -604,26 +603,26 @@
     // =========================================================================
 
     function optimize(targetUnit, startRes, startBld) {
-        var bestResult = simulateScenario(targetUnit, startRes, cloneObj(startBld));
+        var mineTargets = {};
+        var bestResult = simulateScenario(targetUnit, startRes, cloneObj(startBld), mineTargets);
         if (bestResult.error) return bestResult;
         var bestTime = bestResult.totalTime;
-        var bestBld = cloneObj(startBld);
 
         for (var iter = 0; iter < 15; iter++) {
             var improved = false;
             var mines = ['timber', 'clay', 'iron'];
             for (var mi = 0; mi < mines.length; mi++) {
                 var mine = mines[mi];
-                var curLvl = bestBld[mine] || 0;
-                if (curLvl >= (startBld[mine] || 0) + 5) continue;
-                var testBld = cloneObj(bestBld);
-                testBld[mine] = curLvl + 1;
-                var testResult = simulateScenario(targetUnit, startRes, testBld);
+                var curTarget = mineTargets[mine] || 0;
+                if (curTarget >= (startBld[mine] || 0) + 5) continue;
+                var testTargets = cloneObj(mineTargets);
+                testTargets[mine] = curTarget + 1;
+                var testResult = simulateScenario(targetUnit, startRes, cloneObj(startBld), testTargets);
                 if (testResult.error) continue;
                 if (testResult.totalTime < bestTime - 60) {
                     bestTime = testResult.totalTime;
                     bestResult = testResult;
-                    bestBld = testBld;
+                    mineTargets = testTargets;
                     improved = true;
                 }
             }

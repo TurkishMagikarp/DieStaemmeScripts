@@ -163,6 +163,145 @@
   (window.DSUI?.position?.appendPanel || document.body.appendChild.bind(document.body))(container);
   }
 
+  function getStartCoordFromHeader() {
+    const headerText = document.querySelector("#menu_row2 b")?.textContent;
+    const match = headerText?.match(/\((\d+)\|(\d+)\)/);
+    if (!match) throw new Error("Start coordinates not found!");
+    return { x: parseInt(match[1]), y: parseInt(match[2]) };
+  }
+
+  function getDistance(x1, y1, x2, y2) {
+    return Math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2);
+  }
+
+  async function fillUnitsAndSend(coords) {
+    console.log("[BabaFarmer] Attacking:", coords);
+
+    if (guardAction) await guardAction("baba_fill_coords");
+
+    waitForKeyElements('input[name="x"]', (input) => (input.value = coords.x));
+    waitForKeyElements('input[name="y"]', (input) => (input.value = coords.y));
+
+    for (const [unit, amount] of Object.entries(unitsToSend)) {
+      waitForKeyElements(
+        `input[name="${unit}"]`,
+        (input) => (input.value = amount)
+      );
+    }
+
+    let nextPosition = parseInt(localStorage.getItem("position")) + 1;
+    localStorage.setItem("position", nextPosition);
+
+    waitForKeyElements(".village-info", async (infoSpan) => {
+      const ownerInfo = infoSpan.textContent || "";
+
+      if (ownerInfo.includes("Besitzer: Barbaren")) {
+        waitForKeyElements("#target_attack", async (attackButton) => {
+          if (guardAction) await guardAction("baba_send_attack");
+          attackButton.click();
+        });
+      } else {
+        console.log("[BabaFarmer] Ziel ist Spieler — Entry löschen.");
+
+        waitForKeyElements("img.village-delete", async (deleteIcon) => {
+          if (guardAction) await guardAction("baba_delete_nonbarb");
+          deleteIcon.click();
+          setTimeout(() => location.reload(), farmingIntervalDelay);
+        });
+      }
+    });
+  }
+
+  async function getAllVillages() {
+    const world = getWorld();
+    const url = `https://${world}.die-staemme.de/map/village.txt`;
+    console.log("[BabaFarmer] Fetching:", url);
+
+    return new Promise((resolve, reject) => {
+      gmXhr({
+        method: "GET",
+        url,
+        onload: function (response) {
+          const lines = response.responseText.trim().split("\n");
+          const barbarianVillages = [];
+
+          lines.forEach((line) => {
+            const fields = line.split(",");
+            if (fields.length >= 6) {
+              const [id, name, x, y, owner_id, points] = fields;
+              if (owner_id === "0") {
+                barbarianVillages.push({
+                  id: parseInt(id),
+                  name: decodeURIComponent(name),
+                  x: parseInt(x),
+                  y: parseInt(y),
+                  points: parseInt(points),
+                });
+              }
+            }
+          });
+
+          resolve(barbarianVillages);
+        },
+        onerror: function (error) {
+          console.error("[BabaFarmer] Error fetching village data:", error);
+          reject(error);
+        },
+      });
+    });
+  }
+
+  async function farmBarbarians() {
+    const barbarianVillages = await getAllVillages();
+    const { x: originX, y: originY } = getStartCoordFromHeader();
+
+    const nearbyBarbarians = barbarianVillages.filter((village) => {
+      const distance = getDistance(originX, originY, village.x, village.y);
+      return distance <= radius;
+    });
+
+    console.log("[BabaFarmer] Nearby Barbarian Villages:", nearbyBarbarians);
+
+    let position = parseInt(localStorage.getItem("position") || "0");
+    if (position >= nearbyBarbarians.length) {
+      position = 0;
+    }
+
+    localStorage.setItem("position", position.toString());
+    const targetVillage = nearbyBarbarians[position];
+
+    if (targetVillage) {
+      await fillUnitsAndSend({ x: targetVillage.x, y: targetVillage.y });
+    } else {
+      console.log("[BabaFarmer] No valid target found at position", position);
+    }
+  }
+
+  async function startFarming() {
+    if (!farmingInterval) {
+      farmBarbarians().catch((err) =>
+        console.error("[BabaFarmer] farmBarbarians() failed:", err)
+      );
+
+      farmingInterval = setInterval(async () => {
+        if (!farmingEnabled) return;
+        if (guardAction) await guardAction("baba_loop_tick");
+
+        farmBarbarians().catch((err) =>
+          console.error("[BabaFarmer] farmBarbarians() failed:", err)
+        );
+      }, farmingIntervalDelay);
+    }
+  }
+
+  function stopFarming() {
+    if (farmingInterval) {
+      clearInterval(farmingInterval);
+      farmingInterval = null;
+    }
+    console.log("[BabaFarmer] Farming stopped.");
+  }
+
   function createToggleButton() {
     const toggleButton = document.createElement("button");
     toggleButton.textContent = farmingEnabled ? "Farming: ON" : "Farming: OFF";

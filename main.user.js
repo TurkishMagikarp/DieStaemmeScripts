@@ -941,6 +941,24 @@
     throw new Error("Ungültiges Manifest");
   }
 
+  function ensurePanelContainer() {
+    if (window.DSUI?.position?.appendPanel) return;
+    var c = document.createElement('div');
+    c.id = 'ds-panel-container';
+    c.style.cssText = 'position:fixed;top:80px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;align-items:flex-end;';
+    document.body.appendChild(c);
+    window.DSUI = window.DSUI || {};
+    window.DSUI.position = window.DSUI.position || {};
+    window.DSUI.position.appendPanel = function (el) {
+      el.style.position = 'relative';
+      el.style.top = 'auto';
+      el.style.right = 'auto';
+      el.style.left = 'auto';
+      el.style.bottom = 'auto';
+      c.appendChild(el);
+    };
+  }
+
   async function bootstrap() {
     const env = await getEnv();
     registerEnvMenu(env);
@@ -977,6 +995,7 @@
     }
 
     // Normal: load filtered modules
+    ensurePanelContainer();
     window.loadModules = async function loadModules() {
       const moduleUrls = await resolveModuleUrls(getContext()); // await (changed)
       if (!moduleUrls.length) return;

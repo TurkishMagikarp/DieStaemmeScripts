@@ -290,11 +290,12 @@
     console.log('[CaptchaSolver] Fake-Captcha eingeblendet. Ruf DSTools.triggerCaptchaSolve() auf.');
   }
 
-  win.DSTools = win.DSTools || {};
-  win.DSTools.testCaptchaSolver = testApiKey;
-  win.DSTools.testFullFlow = testFullFlow;
-  win.DSTools.testInjectFakeCaptcha = testInjectFakeCaptcha;
-  win.DSTools.triggerCaptchaSolve = attemptSolve;
+  var pageWin = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
+  pageWin.DSTools = pageWin.DSTools || {};
+  pageWin.DSTools.testCaptchaSolver = testApiKey;
+  pageWin.DSTools.testFullFlow = testFullFlow;
+  pageWin.DSTools.testInjectFakeCaptcha = testInjectFakeCaptcha;
+  pageWin.DSTools.triggerCaptchaSolve = attemptSolve;
 
   function init() {
     if (document.readyState === 'loading') {

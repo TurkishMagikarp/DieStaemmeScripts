@@ -175,8 +175,37 @@
     reloadTimer = null;
   }
 
+  /* -------------------- VALIDATION -------------------- */
+  function validateAndFix() {
+    var changed = false;
+
+    if (state.delayMin >= state.delayMax) {
+      state.delayMax = state.delayMin + 100;
+      changed = true;
+    }
+
+    if (state.reloadMin <= state.delayMax) {
+      state.reloadMin = state.delayMax + 100;
+      changed = true;
+    }
+
+    if (state.reloadMin >= state.reloadMax) {
+      state.reloadMax = state.reloadMin + 100;
+      changed = true;
+    }
+
+    if (changed) {
+      saveState();
+      if (delayMinInput) delayMinInput.value = state.delayMin;
+      if (delayMaxInput) delayMaxInput.value = state.delayMax;
+      if (reloadMinInput) reloadMinInput.value = state.reloadMin;
+      if (reloadMaxInput) reloadMaxInput.value = state.reloadMax;
+    }
+  }
+
   /* -------------------- UI -------------------- */
   let toggleBtn;
+  let delayMinInput, delayMaxInput, reloadMinInput, reloadMaxInput;
 
   function updateToggle() {
     toggleBtn.textContent = state.enabled ? 'AM Farm: ON' : 'AM Farm: OFF';
@@ -219,28 +248,36 @@
     box.appendChild(toggleBtn);
 
     box.appendChild(label('Delay Min (ms)'));
-    box.appendChild(numberInput(state.delayMin, v => {
+    delayMinInput = numberInput(state.delayMin, v => {
       state.delayMin = v;
       saveState();
-    }));
+      validateAndFix();
+    });
+    box.appendChild(delayMinInput);
 
     box.appendChild(label('Delay Max (ms)'));
-    box.appendChild(numberInput(state.delayMax, v => {
+    delayMaxInput = numberInput(state.delayMax, v => {
       state.delayMax = v;
       saveState();
-    }));
+      validateAndFix();
+    });
+    box.appendChild(delayMaxInput);
 
     box.appendChild(label('Reload Min (ms)'));
-    box.appendChild(numberInput(state.reloadMin, v => {
+    reloadMinInput = numberInput(state.reloadMin, v => {
       state.reloadMin = v;
       saveState();
-    }));
+      validateAndFix();
+    });
+    box.appendChild(reloadMinInput);
 
     box.appendChild(label('Reload Max (ms)'));
-    box.appendChild(numberInput(state.reloadMax, v => {
+    reloadMaxInput = numberInput(state.reloadMax, v => {
       state.reloadMax = v;
       saveState();
-    }));
+      validateAndFix();
+    });
+    box.appendChild(reloadMaxInput);
 
     box.appendChild(label('Button'));
     const select = document.createElement('select');

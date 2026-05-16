@@ -779,7 +779,7 @@
                 var key = 'dsu.buildbot.queueTemplate.' + found + '.' + world;
                 try {
                     if (typeof GM !== 'undefined' && GM.setValue) {
-                        GM.setValue(key, queue);
+                        await GM.setValue(key, queue);
                     } else {
                         localStorage.setItem(key, JSON.stringify(queue));
                     }

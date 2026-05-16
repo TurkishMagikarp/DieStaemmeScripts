@@ -54,11 +54,27 @@
     const RES_MAP = { timber: 'wood', clay: 'stone', iron: 'iron' };
     const INTERNAL_MAP = { wood: 'timber', stone: 'clay' };
 
-    const BUILD_QUEUE_CODE_MAP = {
-        timber: 0, clay: 1, iron: 2, farm: 3, storage: 4, main: 5,
-        place: 6, statue: 7, smith: 8, barracks: 9, stable: 10,
-        garage: 11, market: 12, wall: 13, hide: 14, snob: 15,
-        church: 16, watchtower: 17
+    const BUILD_QUEUE_ID_MAP = {
+        wood: 'timber',
+        stone: 'clay',
+        timber: 'timber',
+        clay: 'clay',
+        iron: 'iron',
+        farm: 'farm',
+        storage: 'storage',
+        main: 'main',
+        place: 'place',
+        statue: 'statue',
+        smith: 'smith',
+        barracks: 'barracks',
+        stable: 'stable',
+        garage: 'garage',
+        market: 'market',
+        wall: 'wall',
+        hide: 'hide',
+        snob: 'snob',
+        church: 'church',
+        watchtower: 'watchtower'
     };
 
     // =========================================================================
@@ -70,6 +86,13 @@
     let serverConf = null;
     let unitConf = null;
     let isComputing = false;
+    const OPT_SEARCH = {
+        beamWidth: 72,
+        branchFactor: 4,
+        maxSteps: 220,
+        resourceQuantum: 25
+    };
+    const QUEST_REWARD_MIN = { wood: 150, clay: 150, iron: 100 };
 
     // =========================================================================
     //  CONFIG-LOADING (aus DS-Tools)
@@ -240,52 +263,16 @@
     //  level_factor-Tabelle empirisch aus Spielwerten ermittelt
     // =========================================================================
 
-    var LEVEL_FACTOR = [
-        0,
-        0.01,
-        0.01,
-        0.161516436165735,
-        0.50029139641408,
-        0.956686699233349,
-        1.5081900491495,
-        2.15872239973382,
-        2.92402139950873,
-        3.8264181497567,
-        4.89346144998492,
-        6.15818184983154,
-        7.65953289967186,
-        9.443819799993,
-        11.5652774999329,
-        14.0884324499439,
-        17.0893036499556,
-        20.6580694499856,
-        24.9012377499945,
-        29.945072799976,
-        35.9387667499927,
-        43.0592063999605,
-        51.5155386999649,
-        61.5553531499961,
-        73.4716182999805,
-        87.6113783496337,
-        104.384299199706,
-        124.275985499834,
-        147.860715649921,
-        175.81797914994,
-        208.950582949914
-    ];
-
     function getLevelFactor(lvl, building) {
-        if (lvl < 1) return LEVEL_FACTOR[1] || 0.096;
-        if (lvl === 1 && building) {
-            var cfg = buildConf && buildConf[building];
-            if (cfg && parseInt(cfg.max_level, 10) === 1) return 0.095972951067676;
-        }
-        if (lvl <= 30) return LEVEL_FACTOR[lvl];
-        var val = LEVEL_FACTOR[30];
-        for (var i = 31; i <= lvl; i++) {
-            val *= 1.188;
-        }
-        return val;
+        // Welt-spezifisch: build_time_factor aus interface.php?func=get_building_info
+        var b = RES_MAP[building] || building;
+        var factor = buildConf && buildConf[b] ? parseFloat(buildConf[b].build_time_factor) : NaN;
+        if (!Number.isFinite(factor) || factor <= 0) factor = 1.2;
+
+        var level = Math.max(1, parseInt(lvl, 10) || 1);
+        var denom = level - 1;
+        var exponent = Math.max(-13, denom === 0 ? -Infinity : (denom - (14 / denom)));
+        return 1.18 * Math.pow(factor, exponent);
     }
 
     function getBuildTime(building, lvl, hqLvl) {
@@ -312,39 +299,58 @@
     }
 
     function getProduction(lvl, type) {
-        var gv = game_data.village;
-        if (gv) {
-            var prodKey = type === 'timber' ? 'wood' : type === 'clay' ? 'stone' : type === 'iron' ? 'iron' : null;
-            if (prodKey && gv[prodKey + '_prod'] !== undefined) {
-                return Math.round(parseFloat(gv[prodKey + '_prod']) * 3600);
-            }
-        }
-        if (!serverConf) return 30;
-        var base = (serverConf.game && serverConf.game.base_production) ? parseFloat(serverConf.game.base_production) : 30;
+        var prodKey = type === 'timber' ? 'wood' : type === 'clay' ? 'stone' : type === 'iron' ? 'iron' : null;
+        if (!prodKey) return 0;
+
+        var level = parseInt(lvl, 10);
+        if (!Number.isFinite(level) || level < 1) level = 1;
+
+        var gv = game_data.village || {};
+        var base = (serverConf && serverConf.game && serverConf.game.base_production) ? parseFloat(serverConf.game.base_production) : 30;
         var sp = speed();
-        var bonus = (gv && gv.bonus && gv.bonus[prodKey]) ? parseFloat(gv.bonus[prodKey]) : 1;
-        return Math.round(base * sp * Math.pow(1.1631, Math.max(0, parseInt(lvl) - 1)) * bonus);
+
+        // Calibrate the formula to the currently observed village production,
+        // then scale by simulated mine level.
+        var bonus = 1;
+        var curProdSec = parseFloat(gv[prodKey + '_prod']);
+        var curLvl = gv.buildings ? parseInt(gv.buildings[prodKey], 10) : NaN;
+        if (Number.isFinite(curProdSec) && Number.isFinite(curLvl) && curLvl > 0) {
+            var modelCur = base * sp * Math.pow(1.1631, Math.max(0, curLvl - 1));
+            if (modelCur > 0) {
+                bonus = (curProdSec * 3600) / modelCur;
+            }
+        } else if (gv.bonus && Number.isFinite(parseFloat(gv.bonus[prodKey]))) {
+            bonus = parseFloat(gv.bonus[prodKey]);
+        }
+
+        if (!Number.isFinite(bonus) || bonus <= 0) bonus = 1;
+        bonus = Math.max(0.25, Math.min(4, bonus));
+
+        return Math.round(base * sp * Math.pow(1.1631, Math.max(0, level - 1)) * bonus);
     }
 
     function getProductionPerHour(building, lvl) {
-        return getProduction(toInternalBuilding(building), building === 'timber' ? 'wood' : building === 'clay' ? 'stone' : 'iron');
+        var b = toInternalBuilding(building);
+        if (b === 'wood') b = 'timber';
+        if (b === 'stone') b = 'clay';
+        return getProduction(lvl, b);
     }
 
     function getQuestReduction(cost) {
-        function reduceOne(val, isIron) {
-            if (isIron) {
-                if (val < 1000) return Math.min(val, 100);
-                if (val > 20000) return 2000;
-                return Math.round(val * 0.1);
-            }
-            if (val < 1500) return Math.min(val, 150);
-            if (val > 30000) return 2000;
-            return Math.round(val * 0.1);
+        function reduceOne(val, minReward) {
+            var v = parseFloat(val) || 0;
+            if (v <= 0) return 0;
+
+            // Mindestreward pro Ressourcentyp + 10%-Regel, gedeckelt bei 2000.
+            var byPercent = Math.round(v * 0.1);
+            var reduced = Math.max(minReward, byPercent);
+            reduced = Math.min(2000, reduced);
+            return Math.min(v, reduced);
         }
         return {
-            wood: reduceOne(cost.wood || 0, false),
-            clay: reduceOne(cost.clay || 0, false),
-            iron: reduceOne(cost.iron || 0, true)
+            wood: reduceOne(cost.wood || 0, QUEST_REWARD_MIN.wood),
+            clay: reduceOne(cost.clay || 0, QUEST_REWARD_MIN.clay),
+            iron: reduceOne(cost.iron || 0, QUEST_REWARD_MIN.iron)
         };
     }
 
@@ -446,8 +452,11 @@
 
     function hasStorageCapacity(state, cost) {
         var cap = getStorage(state.buildings.storage || 0);
-        // Speicher nur fürs Ziel relevant
-        return true;
+        var qr = getQuestReduction(cost || {});
+        var needWood = Math.max(0, (cost.wood || 0) - qr.wood);
+        var needClay = Math.max(0, (cost.clay || 0) - qr.clay);
+        var needIron = Math.max(0, (cost.iron || 0) - qr.iron);
+        return needWood <= cap && needClay <= cap && needIron <= cap;
     }
 
     function calcProduction(state) {
@@ -459,6 +468,8 @@
     }
 
     function calcWaitTime(state, cost) {
+        if (!hasStorageCapacity(state, cost)) return Infinity;
+
         var prod = calcProduction(state);
         var maxWait = 0;
         var res = state.res || { wood: 0, clay: 0, iron: 0 };
@@ -466,10 +477,21 @@
         var needWood  = Math.max(0, (cost.wood  || 0) - qr.wood  - (res.wood  || 0));
         var needClay  = Math.max(0, (cost.clay  || 0) - qr.clay  - (res.clay  || 0));
         var needIron  = Math.max(0, (cost.iron  || 0) - qr.iron  - (res.iron  || 0));
+        if (needWood > 0 && prod.wood <= 0) return Infinity;
+        if (needClay > 0 && prod.clay <= 0) return Infinity;
+        if (needIron > 0 && prod.iron <= 0) return Infinity;
         if (prod.wood  > 0 && needWood  > 0) maxWait = Math.max(maxWait, needWood  / (prod.wood  / 3600));
         if (prod.clay  > 0 && needClay  > 0) maxWait = Math.max(maxWait, needClay  / (prod.clay  / 3600));
         if (prod.iron  > 0 && needIron  > 0) maxWait = Math.max(maxWait, needIron  / (prod.iron  / 3600));
         return maxWait;
+    }
+
+    function capResources(state) {
+        var cap = getStorage(state.buildings.storage || 0);
+        if (!Number.isFinite(cap) || cap <= 0) return;
+        state.res.wood = Math.min(cap, Math.max(0, state.res.wood || 0));
+        state.res.clay = Math.min(cap, Math.max(0, state.res.clay || 0));
+        state.res.iron = Math.min(cap, Math.max(0, state.res.iron || 0));
     }
 
     function applyProduction(state, duration) {
@@ -478,61 +500,169 @@
         state.res.wood  += p.wood  * hours;
         state.res.clay  += p.clay  * hours;
         state.res.iron  += p.iron  * hours;
+        capResources(state);
     }
 
 
 
     // =========================================================================
-    //  GREEDY-SCHEDULER
+    //  SEARCH-SCHEDULER
     // =========================================================================
 
     function getActions(state, required, mineTargets) {
         var actions = [];
         var isMine = function (b) { return b === 'timber' || b === 'clay' || b === 'iron'; };
+        var candidates = new Set(Object.keys(state.buildings || {}));
 
-        for (var bId in state.buildings) {
+        Object.keys(required || {}).forEach(function (b) { candidates.add(b); });
+        if (mineTargets) {
+            ['timber', 'clay', 'iron'].forEach(function (b) { candidates.add(b); });
+        }
+
+        candidates.forEach(function (bId) {
             var curLvl = state.buildings[bId] || 0;
             var tgt = required[bId] || 0;
             if (isMine(bId) && mineTargets) tgt = Math.max(tgt, mineTargets[bId] || 0);
             var nextLvl = curLvl + 1;
-            if (nextLvl > tgt) continue;
+            if (nextLvl > tgt) return;
+
+            var cfgKey = RES_MAP[bId] || bId;
+            var maxLvl = 30;
+            if (buildConf && buildConf[cfgKey] && buildConf[cfgKey].max_level !== undefined) {
+                maxLvl = parseInt(buildConf[cfgKey].max_level, 10) || 30;
+            }
+            if (nextLvl > maxLvl) return;
 
             var preqs = getBuildingPrereqs(bId);
             var met = true;
             for (var pi = 0; pi < preqs.length; pi++) {
                 if ((state.buildings[preqs[pi].building] || 0) < preqs[pi].level) { met = false; break; }
             }
-            if (!met) continue;
+            if (!met) return;
 
             var cost = getBuildCostAll(bId, nextLvl);
             var bt = getBuildTime(bId, nextLvl, state.buildings.main || 1);
             var wait = calcWaitTime(state, cost);
+            if (!Number.isFinite(wait) || !Number.isFinite(bt)) return;
 
             actions.push({
-                building: bId, level: nextLvl, cost: cost,
-                buildTime: bt, waitTime: wait,
-                isMain: bId === 'main', isMine: isMine(bId),
-                isRequired: (required[bId] || 0) >= nextLvl,
+                building: bId,
+                level: nextLvl,
+                cost: cost,
+                buildTime: bt,
+                waitTime: wait,
+                isMain: bId === 'main',
+                isMine: isMine(bId),
+                isRequired: (required[bId] || 0) >= nextLvl
             });
-        }
+        });
+
         return actions;
+    }
+
+    function compareActions(a, b, targetBuilding) {
+        if (Math.abs(a.waitTime - b.waitTime) > 1) return a.waitTime - b.waitTime;
+        if (a.isRequired !== b.isRequired) return a.isRequired ? -1 : 1;
+        if (a.building === targetBuilding && b.building !== targetBuilding) return -1;
+        if (a.building !== targetBuilding && b.building === targetBuilding) return 1;
+        if (Math.abs(a.buildTime - b.buildTime) > 1) return a.buildTime - b.buildTime;
+        if (a.isMine !== b.isMine) return a.isMine ? 1 : -1;
+        return 0;
     }
 
     function chooseAction(actions, targetBuilding) {
         if (!actions.length) return null;
-        actions.sort(function (a, b) {
-            if (Math.abs(a.waitTime - b.waitTime) > 1) return a.waitTime - b.waitTime;
-            if (a.isRequired !== b.isRequired) return a.isRequired ? -1 : 1;
-            if (a.isMine !== b.isMine) return a.isMine ? -1 : 1;
-            if (a.building === targetBuilding && b.building !== targetBuilding) return 1;
-            if (a.building !== targetBuilding && b.building === targetBuilding) return -1;
-            return a.buildTime - b.buildTime;
+        var sorted = actions.slice().sort(function (a, b) {
+            return compareActions(a, b, targetBuilding);
         });
-        return actions[0];
+        return sorted[0];
+    }
+
+    function chooseActions(actions, targetBuilding, limit) {
+        if (!actions.length) return [];
+        var sorted = actions.slice().sort(function (a, b) {
+            return compareActions(a, b, targetBuilding);
+        });
+        return sorted.slice(0, Math.max(1, limit || 1));
+    }
+
+    function isTargetMet(buildings, required) {
+        for (var tb in required) {
+            if ((buildings[tb] || 0) < required[tb]) return false;
+        }
+        return true;
+    }
+
+    function getTrackedBuildings(required, mineTargets) {
+        var tracked = new Set(Object.keys(required || {}));
+        if (mineTargets) {
+            Object.keys(mineTargets).forEach(function (b) {
+                if ((mineTargets[b] || 0) > 0) tracked.add(b);
+            });
+        }
+        if (!tracked.has('main')) tracked.add('main');
+        return Array.from(tracked).sort();
+    }
+
+    function buildStateKey(state, trackedBuildings) {
+        var q = OPT_SEARCH.resourceQuantum || 25;
+        var lvlKey = trackedBuildings.map(function (b) { return (state.buildings[b] || 0); }).join('|');
+        var rw = Math.floor((state.res.wood || 0) / q);
+        var rc = Math.floor((state.res.clay || 0) / q);
+        var ri = Math.floor((state.res.iron || 0) / q);
+        return lvlKey + ';' + rw + ',' + rc + ',' + ri;
+    }
+
+    function simulateAction(state, action) {
+        var next = {
+            time: state.time,
+            res: cloneObj(state.res || {}),
+            buildings: cloneObj(state.buildings || {}),
+            steps: state.steps.slice()
+        };
+
+        var wait = calcWaitTime(next, action.cost);
+        if (!Number.isFinite(wait)) return null;
+        if (wait > 0) {
+            applyProduction(next, wait);
+            next.time += wait;
+        }
+
+        var qReduction = getQuestReduction(action.cost);
+        next.res.wood = Math.max(0, (next.res.wood || 0) - ((action.cost.wood || 0) - qReduction.wood));
+        next.res.clay = Math.max(0, (next.res.clay || 0) - ((action.cost.clay || 0) - qReduction.clay));
+        next.res.iron = Math.max(0, (next.res.iron || 0) - ((action.cost.iron || 0) - qReduction.iron));
+
+        var bt = action.buildTime;
+        if (!Number.isFinite(bt) || bt < 0) return null;
+
+        var fromLevel = next.buildings[action.building] || 0;
+        var startTime = next.time;
+        next.time += bt;
+        applyProduction(next, bt);
+        next.buildings[action.building] = fromLevel + 1;
+
+        next.steps.push({
+            step: next.steps.length + 1,
+            building: action.building,
+            fromLevel: fromLevel,
+            toLevel: next.buildings[action.building],
+            startTime: startTime,
+            waitTime: wait,
+            buildTime: bt,
+            endTime: next.time,
+            cost: action.cost,
+            questReduction: qReduction,
+            resAfter: cloneObj(next.res),
+            isMain: action.building === 'main',
+            isMine: action.building === 'timber' || action.building === 'clay' || action.building === 'iron'
+        });
+
+        return next;
     }
 
     // =========================================================================
-    //  SIMULATION
+    //  SIMULATION (BEAM SEARCH)
     // =========================================================================
 
     function simulateScenario(targetUnit, startRes, startBld, mineTargets) {
@@ -540,72 +670,80 @@
         if (req.error) return { error: req.error };
 
         var required = req.required;
-        var state = {
-            time: 0, res: cloneObj(startRes || {}),
+        var trackedBuildings = getTrackedBuildings(required, mineTargets);
+        var startState = {
+            time: 0,
+            res: cloneObj(startRes || {}),
             buildings: cloneObj(startBld || {}),
             steps: []
         };
 
-        var maxSteps = 200;
-        for (var sc = 0; sc < maxSteps; sc++) {
-            var targetMet = true;
-            for (var tb in required) {
-                if ((state.buildings[tb] || 0) < required[tb]) { targetMet = false; break; }
-            }
-            if (targetMet) break;
+        if (isTargetMet(startState.buildings, required)) {
+            return {
+                targetId: targetUnit,
+                targetName: U_NAMES[targetUnit] || targetUnit,
+                totalTime: 0,
+                steps: [],
+                finalBuildings: cloneObj(startState.buildings)
+            };
+        }
 
-            var actions = getActions(state, required, mineTargets);
-            if (!actions.length) break;
+        var frontier = [startState];
+        var bestComplete = null;
+        var bestSeen = new Map();
+        var maxSteps = OPT_SEARCH.maxSteps || 220;
+        var beamWidth = OPT_SEARCH.beamWidth || 72;
+        var branchFactor = OPT_SEARCH.branchFactor || 4;
 
-            var chosen = chooseAction(actions, req.targetBuilding);
-            if (!chosen) break;
+        for (var depth = 0; depth < maxSteps; depth++) {
+            var nextFrontier = [];
 
-            var totalWait = 0;
-            if (chosen.waitTime > 0) {
-                totalWait += chosen.waitTime;
-                applyProduction(state, chosen.waitTime);
-                state.time += chosen.waitTime;
-                chosen.waitTime = calcWaitTime(state, chosen.cost);
-                if (chosen.waitTime > 0) {
-                    totalWait += chosen.waitTime;
-                    applyProduction(state, chosen.waitTime);
-                    state.time += chosen.waitTime;
+            for (var fi = 0; fi < frontier.length; fi++) {
+                var state = frontier[fi];
+
+                if (bestComplete && state.time >= bestComplete.time) continue;
+                if (isTargetMet(state.buildings, required)) {
+                    if (!bestComplete || state.time < bestComplete.time) bestComplete = state;
+                    continue;
+                }
+
+                var actions = getActions(state, required, mineTargets);
+                if (!actions.length) continue;
+
+                var picked = chooseActions(actions, req.targetBuilding, branchFactor);
+                for (var ai = 0; ai < picked.length; ai++) {
+                    var ns = simulateAction(state, picked[ai]);
+                    if (!ns) continue;
+                    if (bestComplete && ns.time >= bestComplete.time) continue;
+
+                    var key = buildStateKey(ns, trackedBuildings);
+                    var prev = bestSeen.get(key);
+                    if (prev !== undefined && prev <= ns.time) continue;
+                    bestSeen.set(key, ns.time);
+                    nextFrontier.push(ns);
                 }
             }
 
-            var qReduction = getQuestReduction(chosen.cost);
-            state.res.wood  = Math.max(0, (state.res.wood  || 0) - ((chosen.cost.wood  || 0) - qReduction.wood));
-            state.res.clay  = Math.max(0, (state.res.clay  || 0) - ((chosen.cost.clay  || 0) - qReduction.clay));
-            state.res.iron  = Math.max(0, (state.res.iron  || 0) - ((chosen.cost.iron  || 0) - qReduction.iron));
-
-            var bt = chosen.buildTime;
-            state.time += bt;
-            applyProduction(state, bt);
-            state.buildings[chosen.building] = (state.buildings[chosen.building] || 0) + 1;
-
-            state.steps.push({
-                step: state.steps.length + 1,
-                building: chosen.building,
-                fromLevel: (state.buildings[chosen.building] || 0) - 1,
-                toLevel: state.buildings[chosen.building] || 0,
-                startTime: state.time - bt,
-                waitTime: totalWait,
-                buildTime: bt,
-                endTime: state.time,
-                cost: chosen.cost,
-                questReduction: qReduction,
-                resAfter: cloneObj(state.res),
-                isMain: chosen.building === 'main',
-                isMine: chosen.building === 'timber' || chosen.building === 'clay' || chosen.building === 'iron',
-            });
+            if (!nextFrontier.length) break;
+            nextFrontier.sort(function (a, b) { return a.time - b.time; });
+            frontier = nextFrontier.slice(0, beamWidth);
         }
+
+        var best = bestComplete;
+        if (!best && frontier.length) {
+            frontier.sort(function (a, b) { return a.time - b.time; });
+            best = frontier[0];
+        }
+
+        if (!best) return { error: 'Keine gültige Baureihenfolge gefunden.' };
+        if (!isTargetMet(best.buildings, required)) return { error: 'Optimierung unvollständig: Ziel konnte nicht erreicht werden.' };
 
         return {
             targetId: targetUnit,
             targetName: U_NAMES[targetUnit] || targetUnit,
-            totalTime: state.time,
-            steps: state.steps,
-            finalBuildings: cloneObj(state.buildings),
+            totalTime: best.time,
+            steps: best.steps,
+            finalBuildings: cloneObj(best.buildings)
         };
     }
 
@@ -756,34 +894,45 @@
                 }
                 var queue = [];
                 result.steps.forEach(function (st) {
-                    var code = BUILD_QUEUE_CODE_MAP[st.building];
-                    if (code !== undefined) queue.push(String(code));
+                    var bid = BUILD_QUEUE_ID_MAP[st.building];
+                    var lvl = parseInt(st.toLevel, 10);
+                    if (!bid || !Number.isFinite(lvl) || lvl < 1) return;
+                    queue.push({ building: bid, level: lvl });
                 });
                 if (!queue.length) {
                     try { UI.ErrorMessage('Keine baubaren Schritte in der Queue.', 3000); } catch(e) {}
                     return;
                 }
                 var world = game_data.world;
-                var found = -1;
-                for (var ti = 1; ti <= 5; ti++) {
-                    var tk = 'dsu.buildbot.queueTemplate.' + ti + '.' + world;
-                    var existing;
-                    try {
-                        existing = typeof GM !== 'undefined' && GM.getValue ? await GM.getValue(tk) : JSON.parse(localStorage.getItem(tk) || 'null');
-                    } catch(e) { existing = null; }
-                    if (!existing || (Array.isArray(existing) && existing.every(function(v) { return v === '-' || v === null || v === undefined; }))) {
-                        found = ti; break;
+                var villageId = game_data.village && game_data.village.id;
+                var keyTemplates = 'dsu.buildbot.templates.' + world;
+                var keySelected = 'dsu.buildbot.selectedTemplate.' + world + '.' + villageId;
+                var existingTemplates = [];
+                try {
+                    if (typeof GM !== 'undefined' && GM.getValue) {
+                        existingTemplates = await GM.getValue(keyTemplates, []);
+                    } else {
+                        existingTemplates = JSON.parse(localStorage.getItem(keyTemplates) || '[]');
                     }
+                } catch (e) {
+                    existingTemplates = [];
                 }
-                if (found === -1) found = 1;
-                var key = 'dsu.buildbot.queueTemplate.' + found + '.' + world;
+
+                if (!Array.isArray(existingTemplates)) existingTemplates = [];
+
+                var templateName = 'Optimizer ' + new Date().toLocaleString('de-DE');
+                existingTemplates.push({ name: templateName, queue: queue });
+                var newIdx = existingTemplates.length - 1;
+
                 try {
                     if (typeof GM !== 'undefined' && GM.setValue) {
-                        await GM.setValue(key, queue);
+                        await GM.setValue(keyTemplates, existingTemplates);
+                        if (villageId) await GM.setValue(keySelected, newIdx);
                     } else {
-                        localStorage.setItem(key, JSON.stringify(queue));
+                        localStorage.setItem(keyTemplates, JSON.stringify(existingTemplates));
+                        if (villageId) localStorage.setItem(keySelected, JSON.stringify(newIdx));
                     }
-                    try { UI.SuccessMessage('Neue Vorlage ' + found + ' erstellt – ' + queue.length + ' Schritte.', 4000); } catch(e) {}
+                    try { UI.SuccessMessage('Vorlage "' + templateName + '" erstellt – ' + queue.length + ' Schritte.', 4000); } catch(e) {}
                 } catch (e) {
                     try { UI.ErrorMessage('Export fehlgeschlagen: ' + e.message, 3000); } catch(ex) {}
                 }
@@ -908,18 +1057,7 @@
             var startBld = currentBuildings();
             var result = optimize(targetUnit, startRes, startBld);
             wind.__dsoLastResult = result;
-            var diffTotal = null;
-            var resultMines = null;
-            var mineTargetsPlus = {
-                timber: (startBld.timber || 0) + 1,
-                clay: (startBld.clay || 0) + 1,
-                iron: (startBld.iron || 0) + 1
-            };
-            resultMines = simulateScenario(targetUnit, startRes, cloneObj(startBld), mineTargetsPlus);
-            if (resultMines && !resultMines.error) {
-                diffTotal = resultMines.totalTime - (result.totalTime || 0);
-            }
-            renderOverlay(result, targetUnit, diffTotal, resultMines);
+            renderOverlay(result, targetUnit, null, null);
             isComputing = false;
         });
     }

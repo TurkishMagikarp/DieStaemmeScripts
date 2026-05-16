@@ -1,5 +1,5 @@
 // ==UserScript Module==
-// Baba Farmer – Modulversion für DS-Tools (place-screen)
+// SpeckMichs Baba Farmer – Modulversion für DS-Tools (place-screen)
 
 (function () {
   "use strict";

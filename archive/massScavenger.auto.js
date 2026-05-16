@@ -2,7 +2,7 @@
 // @name         DS → Mass Scavenger Auto
 // @version      0.3.4
 // @description  Liest Scavenge-Endzeiten aus dem ScavengeMassScreen-JSON (return_time), lädt ~1,5s nach dem frühesten Ende neu und nutzt DSMassScavenger.planNextSlot() zum automatischen Wieder-Senden – alle Aktionen durch DSGuards gepaced und geschützt. Toggle auf allen place-Seiten sichtbar, aktiv nur auf scavenge_mass.
-// @author       TurkishMagikarp
+// @author       SpeckMich
 // @match        https://*.die-staemme.de/game.php?*&screen=place*
 // @run-at       document-idle
 // ==/UserScript==

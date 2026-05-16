@@ -3,7 +3,7 @@
 // @namespace    http://tampermonkey.net/
 // @version      2.2
 // @description  Sendet Discord-Nachricht bei Inc-Erhöhung. Webhook wird aus DS-Tools Settings gelesen.
-// @author       TurkishMagikarp
+// @author       SpeckMich
 // @match        https://*.die-staemme.de/*
 // @run-at       document-idle
 // ==/UserScript==

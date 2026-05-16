@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name         DS-Tools Auto Recruiter v1 (Bot-Schutz safe)
+// @name         SpeckMichs Auto Recruiter v1 (Bot-Schutz safe)
 // @namespace    http://tampermonkey.net/
 // @version      1.2
 // @description  Automatisiert Masseneinheitenrekrutierung mit UI-Kontrolle (gated by DSGuards) in Die Stämme (DE)
-// @author       TurkishMagikarp
+// @author       SpeckMich
 // @match        https://*.die-staemme.de/game.php?village=*&screen=train*
 // @match        https://*.die-staemme.de/game.php?screen=train*
 // @grant        none

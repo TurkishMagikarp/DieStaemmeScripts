@@ -2,7 +2,6 @@
     'use strict';
 
     if (!/screen=main/.test(location.href)) return;
-
     if (window.__dsBuildQueueLoaded) return;
     window.__dsBuildQueueLoaded = true;
 
@@ -24,392 +23,138 @@
 
     const W = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
     const game_data = W.game_data;
-
     const WORLD = game_data.world;
-    const PLAYER_ID = game_data.player?.id;
     const VILLAGE_ID = game_data.village?.id;
     const K = (s) => 'dsu.buildbot.' + s + '.' + WORLD;
 
-    const KEY_SELECTED = (vid) => K('selected') + '.' + vid;
-    const KEY_QUEUE_T = (tIdx) => K('queueTemplate') + '.' + tIdx;
-    const KEY_STATE = K('foldState') + '.' + PLAYER_ID;
-    const KEY_QUESTS = K('doQuests') + '.' + PLAYER_ID;
-
-    const CODES = [
-        { name: 'wood', image: '3', title: 'Holzfällerlager', levels: 30 },
-        { name: 'stone', image: '3', title: 'Lehmgrube', levels: 30 },
-        { name: 'iron', image: '3', title: 'Eisenmine', levels: 30 },
-        { name: 'farm', image: '3', title: 'Bauernhof', levels: 30 },
-        { name: 'storage', image: '3', title: 'Speicher', levels: 30 },
-        { name: 'main', image: '3', title: 'Hauptgebäude', levels: 30 },
-        { name: 'place', image: '1', title: 'Versammlungsplatz', levels: 1 },
-        { name: 'statue', image: '1', title: 'Statue', levels: 1 },
-        { name: 'smith', image: '3', title: 'Schmiede', levels: 20 },
-        { name: 'barracks', image: '3', title: 'Kaserne', levels: 25 },
-        { name: 'stable', image: '3', title: 'Stall', levels: 20 },
-        { name: 'garage', image: '3', title: 'Werkstatt', levels: 15 },
-        { name: 'market', image: '3', title: 'Marktplatz', levels: 25 },
-        { name: 'wall', image: '3', title: 'Wall', levels: 20 },
-        { name: 'hide', image: '1', title: 'Versteck', levels: 10 },
-        { name: 'snob', image: '1', title: 'Adelshof', levels: 1 },
-        { name: 'church', image: '3', title: 'Kirche', levels: 3 },
-        { name: 'watchtower', image: '3', title: 'Wachturm', levels: 20 }
+    const BUILDINGS = [
+        { id: 'main',       name: 'Hauptgebäude' },
+        { id: 'barracks',   name: 'Kaserne' },
+        { id: 'stable',     name: 'Stall' },
+        { id: 'garage',     name: 'Werkstatt' },
+        { id: 'smith',      name: 'Schmiede' },
+        { id: 'market',     name: 'Marktplatz' },
+        { id: 'place',      name: 'Versammlungsplatz' },
+        { id: 'statue',     name: 'Statue' },
+        { id: 'wall',       name: 'Wall' },
+        { id: 'snob',       name: 'Adelshof' },
+        { id: 'farm',       name: 'Bauernhof' },
+        { id: 'storage',    name: 'Speicher' },
+        { id: 'hide',       name: 'Versteck' },
+        { id: 'church',     name: 'Kirche' },
+        { id: 'watchtower', name: 'Wachturm' },
+        { id: 'timber',     name: 'Holzfällerlager' },
+        { id: 'clay',       name: 'Lehmgrube' },
+        { id: 'iron',       name: 'Eisenmine' },
     ];
+    const BUILDING_MAP = {};
+    BUILDINGS.forEach(function (b) { BUILDING_MAP[b.id] = b; });
 
-    const FALLBACKS = (function () {
-        var f = {};
-        f.default = ["5","4","6","1","0","3","2","1","0","2","1","0","2","5","5","4","4","12","2","2","1","0","2","1","3","3","3","4","0","2","4","1","0","1","4","0","12","12","12","12","5","1","5","0","3","1","5","0","4","3","2","1","3","0","5","4","4","0","3","1","0","1","5","2","5","0","4","1","3","5","2","1","0","4","2","4","4","5","0","1","2","4","5","5","1","0","2","4","3","3","3","3","3","5","5","2","1","0","5","2","5","5","4","3","2","5","1","0","4","5","1","0","4","5","4","2","1","0","3","4","1","0","2","3","4","5","1","0","2","3","4","1","0","5","2","3","5","4","1","0","5","2","4","4","2","3","2","3","2","3","8","8","8","8","8","8","9","9","9","9","9","8","8","10","10","10","10","8","8","11","11","11","8","8","8","8","8","8","8","8","8","8","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-"];
-        f[1] = ["5","0","1","2","3","4","5","0","1","2","3","4","5","0","1","2","3","4","5","0","1","2","3","4","5","0","1","2","3","4","9","12","12","13","5","0","1","2","4","13","12","5","0","1","2","13","4","12","5","0","1","2","4","13","12","5","0","1","2","4","5","0","1","2","4","0","1","0","1","5","4","12","0","1","2","0","1","5","4","12","2","0","1","9","9","9","9","8","8","8","8","8","10","10","10","0","1","2","5","4","12","0","1","2","0","1","2","5","4","12","0","1","2","5","4","12","1","0","2","5","4","0","1","2","5","4","0","1","2","5","4","0","1","2","5","4","0","1","2","5","4","0","1","2","0","1","2","4","0","1","2","-","-","-","-","-","-","-","-","-"];
-        f[2] = ["5","0","1","2","3","4","5","0","1","2","3","4","5","0","1","2","3","4","5","0","1","2","3","4","5","0","1","2","3","4","9","12","12","13","5","0","1","2","4","13","12","5","0","1","2","13","4","12","5","0","1","2","4","13","12","5","0","1","2","4","5","0","1","2","4","0","1","0","1","5","13","4","12","0","1","2","0","1","5","4","12","2","0","1","9","9","9","9","13","8","8","8","8","8","10","10","10","0","1","2","5","4","12","0","1","2","0","1","2","5","4","12","0","1","2","5","4","12","1","0","2","5","4","0","1","2","5","4","0","1","2","5","4","0","1","2","5","4","0","1","2","5","4","0","1","2","0","1","2","4","0","1","2","-","-","-","-","-","-","-"];
-        f[3] = f.default.slice(); f[4] = f.default.slice(); f[5] = f.default.slice();
-        f[6] = f.default.slice(); f[7] = f.default.slice(); f[8] = f.default.slice();
-        f[9] = f.default.slice();
-        f[10] = ["13","13","13","13","13","13","13","13","13","13","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-"];
-        f[11] = f[10].concat();
-        f[12] = f[10].concat('13');
-        f[13] = ["5","5","5","5","5","9","9","9","9","8","8","8","8","8","9","5","5","5","5","5","9","10","10","10","9","9","9","9","10","10","8","8","8","9","10","8","8","9","10","11","11","11","11","11","9","9","10","9","10","10","9","10","9","10","9","10","11","11","11","9","9","10","10","9","9","9","10","10","9","9","10","10","10","11","11","11","11","11","11","11","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-"];
-        f[14] = ["5","5","5","5","5","5","5","5","5","5","5","5","5","5","5","5","5","5","5","5","9","9","9","9","9","8","8","8","8","8","8","8","12","12","12","12","12","12","12","12","12","12","8","8","8","8","8","8","8","8","8","8","8","8","8","15","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-"];
-        f[15] = f.default.slice(); f[16] = f.default.slice(); f[17] = f.default.slice(); f[18] = f.default.slice();
-        return f;
-    })();
+    const PREREQS = {
+        smith:      [{ building: 'main', level: 5 }, { building: 'barracks', level: 1 }],
+        barracks:   [{ building: 'main', level: 3 }],
+        stable:     [{ building: 'main', level: 10 }, { building: 'barracks', level: 5 }, { building: 'smith', level: 5 }],
+        garage:     [{ building: 'main', level: 7 }],
+        market:     [{ building: 'main', level: 3 }],
+        snob:       [{ building: 'main', level: 20 }, { building: 'market', level: 10 }, { building: 'smith', level: 20 }],
+        wall:       [{ building: 'main', level: 1 }],
+    };
 
-    var TEMPLATES_COUNT = 5;
-    var selectedT = 1;
-    var stateFold = 'minus';
+    const KEY_TEMPLATES = K('templates');
+    const KEY_SELECTED = K('selectedTemplate') + '.' + VILLAGE_ID;
+    const KEY_QUESTS = K('doQuests') + '.' + PLAYER_ID;
+    const KEY_FOLD = K('foldState') + '.' + PLAYER_ID;
+
+    var templates = [];
+    var selectedIdx = -1;
     var doQuests = false;
-    var disableStart = false;
-    var COLS = 20;
-    var RERUN_SEC = 5;
-
+    var isRunning = false;
+    var isFolded = false;
     var cancelRunLoop = null;
     var cancelRepaintLoop = null;
 
-    var dragSourceId = null;
+    function getCurrentLevel(buildingId) {
+        try {
+            var gb = game_data.village.buildings || {};
+            var map = { timber: 'wood', clay: 'stone' };
+            var key = map[buildingId] || buildingId;
+            return parseInt(gb[key] || 0);
+        } catch { return 0; }
+    }
+
+    function getDisplayId(bid) {
+        var map = { wood: 'timber', stone: 'clay' };
+        return map[bid] || bid;
+    }
+
+    function getBuildingName(id) {
+        var b = BUILDING_MAP[id];
+        return b ? b.name : id;
+    }
+
+    function getPrereqs(buildingId) {
+        return PREREQS[buildingId] || [];
+    }
+
+    function validateEntry(entry) {
+        var warnings = [];
+        if (!BUILDING_MAP[entry.building]) {
+            warnings.push('Unbekanntes Gebäude: ' + entry.building);
+            return warnings;
+        }
+        var current = getCurrentLevel(entry.building);
+        var prereqs = getPrereqs(entry.building);
+        for (var i = 0; i < prereqs.length; i++) {
+            var p = prereqs[i];
+            var pCur = getCurrentLevel(p.building);
+            if (pCur < p.level) {
+                warnings.push(getBuildingName(p.building) + ' benötigt Stufe ' + p.level + ' (aktuell: ' + pCur + ')');
+            }
+        }
+        if (entry.level > 30) {
+            warnings.push(getBuildingName(entry.building) + ' ' + entry.level + ' überschreitet Maximalstufe 30');
+        }
+        return warnings;
+    }
+
+    function validateQueue(queue) {
+        var allWarnings = [];
+        for (var i = 0; i < queue.length; i++) {
+            var w = validateEntry(queue[i]);
+            for (var j = 0; j < w.length; j++) {
+                allWarnings.push('#' + (i + 1) + ': ' + w[j]);
+            }
+        }
+        return allWarnings;
+    }
+
+    async function loadTemplates() {
+        var raw = await GMwrap.get(KEY_TEMPLATES, []);
+        templates = raw;
+        selectedIdx = parseInt(await GMwrap.get(KEY_SELECTED, -1));
+        if (selectedIdx < 0 || selectedIdx >= templates.length) {
+            selectedIdx = templates.length > 0 ? 0 : -1;
+        }
+    }
+
+    async function saveTemplates() {
+        await GMwrap.set(KEY_TEMPLATES, templates);
+    }
+
+    function getQueue() {
+        if (selectedIdx < 0 || selectedIdx >= templates.length) return [];
+        return templates[selectedIdx].queue || [];
+    }
+
+    async function setQueue(queue) {
+        if (selectedIdx >= 0 && selectedIdx < templates.length) {
+            templates[selectedIdx].queue = queue;
+            await saveTemplates();
+        }
+    }
 
     function isVisible(el) {
         return el && el.offsetParent !== null;
-    }
-
-    function iconHtml(code) {
-        return '<i class="icon building-' + CODES[code].name + '" style="height:16px;vertical-align:-3px;"></i><b>00</b>';
-    }
-
-    function cell(code) {
-        var isNum = !isNaN(code);
-        return '<td role="tkk-element"' + (isNum ? ' data-code="' + code + '"' : '') + ' style="text-align:center;white-space:nowrap;">' + (isNum ? iconHtml(code) : '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;') + '</td>';
-    }
-
-    function levelPaint(content) {
-        try {
-            var colors = { built: '#5a09', building: '#5af9', unbuildable: '#aaa9', error: '#a009' };
-            var levels = {};
-            document.querySelectorAll('td[role="tkk-element"]').forEach(function (td) {
-                var code = parseInt(td.getAttribute('data-code'));
-                if (Number.isNaN(code)) return;
-                var lvl = (levels[code] || 1);
-                var current = parseInt((game_data.village && game_data.village.buildings && game_data.village.buildings[CODES[code].name]) || '0');
-                var btn = document.querySelector('a.btn-build[data-building="' + CODES[code].name + '"]');
-                var next = btn ? parseInt(btn.getAttribute('data-level-next') || '0') : 0;
-                if (!next && document.querySelector('tr.buildorder_' + CODES[code].name)) next = CODES[code].levels + 1;
-                if (content) {
-                    var b = td.querySelector('b');
-                    if (b) b.textContent = ('0' + lvl).slice(-2);
-                }
-                var bg = '';
-                if (!current) bg = colors.unbuildable;
-                else if (current >= lvl) bg = colors.built;
-                else if (lvl > CODES[code].levels) bg = colors.error;
-                else if (next && lvl < next) bg = colors.building;
-                td.style.backgroundColor = bg;
-                levels[code] = lvl + 1;
-            });
-        } catch (e) {
-            console.warn('[BuildBot] levelPaint error:', e);
-        }
-    }
-
-    async function getQueue() {
-        try {
-            var q = await GMwrap.get(KEY_QUEUE_T(selectedT), null);
-            return q || FALLBACKS.default.slice();
-        } catch (e) {
-            return FALLBACKS.default.slice();
-        }
-    }
-
-    async function setQueue(arr) {
-        await GMwrap.set(KEY_QUEUE_T(selectedT), arr);
-    }
-
-    function toolbarRow() {
-        var hidden = stateFold === 'plus' ? ' display:none;' : '';
-        return '<tr>\n<td colspan="' + COLS + '" style="text-align:center;">'
-            + '<input type="button" id="bauvorlage1" value="Vorlage 1" class="btn" style="width:10%;' + hidden + '"/>'
-            + '<input type="button" id="bauvorlage2" value="Vorlage 2" class="btn" style="width:10%;' + hidden + '"/>'
-            + '<input type="button" id="bauvorlage3" value="Vorlage 3" class="btn" style="width:10%;' + hidden + '"/>'
-            + '<input type="button" id="wall10" value="Wall 10" class="btn" style="width:10%;' + hidden + '"/>'
-            + '<input type="button" id="wall15" value="Wall 15" class="btn" style="width:10%;' + hidden + '"/>'
-            + '<input type="button" id="wall20" value="Wall 20" class="btn" style="width:10%;' + hidden + '"/>'
-            + '<input type="button" id="kaserne_stall_werkstadt" value="Kaserne/Stall/Werkstatt" class="btn" style="width:20%;' + hidden + '"/>'
-            + '<input type="button" id="AHpush" value="AHpush" class="btn" style="width:10%;' + hidden + '"/>'
-            + '</td></tr>';
-    }
-
-    async function draw() {
-        try {
-            var existing = document.getElementById('tkk-queue');
-            if (existing) existing.remove();
-
-            var queue = await getQueue();
-
-            var html = '<div id="tkk-queue"><br/><table class="vis" style="width:100%;"><tr>';
-            html += '<th colspan="' + COLS + '" style="text-align:center;background-color:#c1a264;">Bauvorlagen</th></tr>';
-            html += toolbarRow();
-            var hidden = stateFold === 'plus' ? ' style="display:none;"' : '';
-            html += '<tr><th colspan="' + COLS + '"><img id="tkk-toggle" src="graphic/' + stateFold + '.png" style="vertical-align:-4px;"/>[DSU] Build Bot</th></tr>';
-
-            html += '<tr role="tkk-row"' + hidden + '>';
-            if (queue.length) {
-                for (var i = 0; i < queue.length; i++) {
-                    var code = queue[i];
-                    if (i && i % COLS === 0) html += '</tr><tr role="tkk-row"' + hidden + '>';
-                    html += isNaN(code) ? cell() : cell(code);
-                    if (i + 1 === queue.length) html += cell().repeat(COLS - ((i + 1) % COLS || COLS));
-                }
-            } else {
-                html += cell().repeat(COLS);
-            }
-            html += '</tr><tr id="tkk-separator"' + hidden + '><td colspan="' + COLS + '" style="text-align:center;background-color:#c1a264;">\u2195 DK: Herausnehmen \u2022 DK+STRG: Entfernen</td></tr>';
-
-            for (var r = 0; r < Math.ceil(CODES.length / COLS); r++) {
-                html += '<tr' + hidden + '>';
-                for (var c = 0; c < COLS; c++) {
-                    var idx = r * COLS + c;
-                    if (CODES[idx]) {
-                        html += '<td id="tkk-drag-' + idx + '" data-code="' + idx + '" title="' + CODES[idx].title + '" style="text-align:center;" draggable="true"><img src="https://dsde.innogamescdn.com/asset/f1821a7a/graphic/buildings/mid/' + CODES[idx].name + CODES[idx].image + '.png" style="max-width:25px;max-height:25px;"/></td>';
-                    } else html += '<td></td>';
-                }
-                html += '</tr>';
-            }
-
-            html += '<tr' + hidden + '><td colspan="' + COLS + '" style="text-align:center;background-color:#c1a264;">\u2195 DK: Hinzuf\u00fcgen \u2022 D&D: Dazwischenschieben \u2022 D&D+STRG: Ersetzen</td></tr>';
-            html += '<tr><td colspan="' + COLS + '" style="text-align:center;">';
-            html += '<select id="tkk-template" style="margin-right:3px;vertical-align:1px;">';
-            for (var ti = 1; ti <= TEMPLATES_COUNT; ti++) html += '<option value="' + ti + '"' + (selectedT === ti ? ' selected' : '') + '>Vorlage ' + ti + '</option>';
-            html += '</select>';
-            var h = stateFold === 'plus' ? ' display:none;' : '';
-            html += '<input type="button" id="tkk-add" value="+" class="btn" style="width:3%;' + h + '"/>';
-            html += '<input type="button" id="tkk-remove" value="-" class="btn" style="width:3%;' + h + '"/>';
-            html += '<input type="button" id="tkk-clear" value="X" class="btn" style="width:3%;' + h + '"/>';
-            html += '<input type="file" id="tkk-file" style="width:13%;margin-left:3px;vertical-align:1px;' + h + '"/>';
-            html += '<input type="button" id="tkk-import" value="\u2191" class="btn" style="width:3%;' + h + '"/>';
-            html += '<a id="tkk-export" href="#" class="btn" style="width:2%;' + h + '">\u2193</a>';
-            html += '<label style="margin-left:8px;"><input type="checkbox" id="tkk-quests"' + (doQuests ? ' checked' : '') + '/> Quests</label>';
-            html += '<input type="button" id="tkk-save" value="Speichern" class="btn" style="width:10%;' + h + '"/>';
-            html += '<input type="button" id="tkk-start" value="Starten" class="btn" style="width:10%;"' + (disableStart ? ' disabled' : '') + '/>';
-            html += '</td></tr></table></div>';
-
-            var container = document.getElementById('content_value') || document.querySelector('td#content_value') || document.body;
-            var firstTable = container.querySelector('table');
-            if (firstTable) firstTable.insertAdjacentHTML('afterend', html);
-            else container.insertAdjacentHTML('beforeend', html);
-
-            levelPaint(true);
-
-            var exp = document.getElementById('tkk-export');
-            if (exp) {
-                var dataStr = 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(queue));
-                exp.setAttribute('download', 'queue.json');
-                exp.setAttribute('href', dataStr);
-            }
-        } catch (e) {
-            console.error('[BuildBot] draw error:', e);
-        }
-    }
-
-    function wireHandlers() {
-        document.body.addEventListener('click', function (ev) {
-            var target = ev.target;
-            var id = target && target.id;
-
-            if (id === 'tkk-toggle') {
-                var img = document.getElementById('tkk-toggle');
-                if (!img) return;
-                stateFold = /minus/.test(img.getAttribute('src')) ? 'plus' : 'minus';
-                img.setAttribute('src', 'graphic/' + stateFold + '.png');
-                GMwrap.set(KEY_STATE, stateFold).then(function () { draw(); });
-                return;
-            }
-
-            if (id === 'tkk-add') {
-                var sep = document.getElementById('tkk-separator');
-                if (sep) {
-                    var tr = document.createElement('tr');
-                    tr.setAttribute('role', 'tkk-row');
-                    tr.innerHTML = cell().repeat(COLS);
-                    sep.parentNode.insertBefore(tr, sep);
-                }
-                return;
-            }
-
-            if (id === 'tkk-remove') {
-                var rows = document.querySelectorAll('tr[role="tkk-row"]');
-                if (rows.length) rows[rows.length - 1].remove();
-                return;
-            }
-
-            if (id === 'tkk-clear') {
-                document.querySelectorAll('td[role="tkk-element"]').forEach(function (td) {
-                    td.outerHTML = cell();
-                });
-                levelPaint(true);
-                return;
-            }
-
-            if (id === 'tkk-save') {
-                (async function () {
-                    var data = [];
-                    document.querySelectorAll('td[role="tkk-element"]').forEach(function (td) {
-                        var code = parseInt(td.getAttribute('data-code'));
-                        data.push(Number.isNaN(code) ? '-' : String(code));
-                    });
-                    await setQueue(data);
-                    draw();
-                })();
-                return;
-            }
-
-            if (id === 'tkk-start') {
-                var btn = document.getElementById('tkk-start');
-                if (btn && !btn.disabled) {
-                    btn.disabled = true;
-                    disableStart = true;
-                    startRunLoop();
-                }
-                return;
-            }
-
-            if (id === 'tkk-import') {
-                (async function () {
-                    var fileInput = document.getElementById('tkk-file');
-                    var file = fileInput && fileInput.files && fileInput.files[0];
-                    if (!file) return;
-                    try {
-                        var txt = await file.text();
-                        var arr;
-                        try { arr = JSON.parse(txt) || []; } catch (e) { arr = []; }
-                        await setQueue(arr);
-                        draw();
-                    } catch (e) {}
-                })();
-                return;
-            }
-
-            if (id === 'bauvorlage1') { setQueue(FALLBACKS[1]).then(function () { draw(); }); return; }
-            if (id === 'bauvorlage2') { setQueue(FALLBACKS[2]).then(function () { draw(); }); return; }
-            if (id === 'bauvorlage3') { setQueue(FALLBACKS[3]).then(function () { draw(); }); return; }
-            if (id === 'wall10') { setQueue(FALLBACKS[10]).then(function () { draw(); }); return; }
-            if (id === 'wall15') { setQueue(FALLBACKS[11]).then(function () { draw(); }); return; }
-            if (id === 'wall20') { setQueue(FALLBACKS[12]).then(function () { draw(); }); return; }
-            if (id === 'kaserne_stall_werkstadt') { setQueue(FALLBACKS[13]).then(function () { draw(); }); return; }
-            if (id === 'AHpush') { setQueue(FALLBACKS[14]).then(function () { draw(); }); return; }
-        });
-
-        document.body.addEventListener('change', function (ev) {
-            if (ev.target && ev.target.id === 'tkk-template') {
-                (async function () {
-                    selectedT = parseInt(ev.target.value);
-                    await GMwrap.set(KEY_SELECTED(VILLAGE_ID), selectedT);
-                    draw();
-                })();
-                return;
-            }
-
-            if (ev.target && ev.target.id === 'tkk-quests') {
-                doQuests = ev.target.checked;
-                GMwrap.set(KEY_QUESTS, doQuests);
-                return;
-            }
-        });
-
-        document.body.addEventListener('dblclick', function (ev) {
-            var target = ev.target;
-            var td = target.closest ? target.closest('td[role="tkk-element"]') : null;
-            if (td) {
-                if (ev.ctrlKey) {
-                    td.outerHTML = cell();
-                    levelPaint(true);
-                    return;
-                }
-                var table = td.closest('table');
-                if (!table) return;
-                var cells = table.querySelectorAll('td[role="tkk-element"]');
-                var skip = true, last = null;
-                cells.forEach(function (c) {
-                    if (c === td) { skip = false; return; }
-                    if (skip) return;
-                    if (last) last.outerHTML = c.outerHTML;
-                    last = c;
-                });
-                if (last) last.outerHTML = cell();
-                levelPaint(true);
-                return;
-            }
-
-            var dragTd = target.closest ? target.closest('td[id^="tkk-drag"]') : null;
-            if (dragTd) {
-                var code = parseInt(dragTd.getAttribute('data-code'));
-                var lastEl = document.querySelector('td[role="tkk-element"]:last-of-type');
-                if (lastEl) {
-                    lastEl.outerHTML = cell(code);
-                    levelPaint(true);
-                }
-                return;
-            }
-        });
-
-        document.body.addEventListener('dragstart', function (ev) {
-            var target = ev.target;
-            var dragTd = target.closest ? target.closest('td[id^="tkk-drag"]') : null;
-            if (dragTd) {
-                dragSourceId = dragTd.id;
-                try { ev.dataTransfer.setData('text/plain', dragTd.id); } catch (e) {}
-            }
-        });
-
-        document.body.addEventListener('dragover', function (ev) {
-            ev.preventDefault();
-        });
-
-        document.body.addEventListener('drop', function (ev) {
-            ev.preventDefault();
-            var target = ev.target;
-            var td = target.closest ? target.closest('td[role="tkk-element"]') : null;
-            if (!td || !dragSourceId) return;
-            var sourceEl = document.getElementById(dragSourceId);
-            if (!sourceEl) return;
-            var code = parseInt(sourceEl.getAttribute('data-code'));
-            if (ev.ctrlKey) {
-                td.outerHTML = cell(code);
-                levelPaint(true);
-                dragSourceId = null;
-                return;
-            }
-            var table = td.closest('table');
-            if (!table) return;
-            var cells = table.querySelectorAll('td[role="tkk-element"]');
-            var skip = true, last = null;
-            cells.forEach(function (c) {
-                if (c === td) { skip = false; return; }
-                if (skip) return;
-                var repl = last === null ? cell(code) : last.outerHTML;
-                last = c.cloneNode(true);
-                c.outerHTML = repl;
-            });
-            if (last) last.outerHTML = cell();
-            levelPaint(true);
-            dragSourceId = null;
-        });
     }
 
     function click(el) {
@@ -438,27 +183,37 @@
         }
     }
 
+    var buildProgress = {};
+
     function tryBuildFromQueue(queue) {
         try {
             var additional = (game_data.features && game_data.features.Premium && game_data.features.Premium.active) ? 4 : 1;
             if (document.querySelectorAll('tr.sortable_row').length >= additional) return false;
 
-            var levels = {};
+            var map = { timber: 'wood', clay: 'stone', iron: 'iron' };
             for (var i = 0; i < queue.length; i++) {
-                var code = queue[i];
-                if (isNaN(code)) continue;
-                var lvl = (levels[code] || 1);
-                var sel = 'a#main_buildlink_' + CODES[code].name + '_' + lvl;
+                var entry = queue[i];
+                var buildingId = map[entry.building] || entry.building;
+                var targetLvl = entry.level;
+
+                var current = getCurrentLevel(entry.building);
+                var nextLvl = buildProgress[entry.building] || (current + 1);
+
+                if (nextLvl > targetLvl) continue;
+
+                var sel = 'a#main_buildlink_' + buildingId + '_' + nextLvl;
                 var el = document.querySelector(sel);
                 if (el) {
-                    if (isVisible(el)) click(el);
-                    return true;
+                    if (isVisible(el)) {
+                        click(el);
+                        buildProgress[entry.building] = nextLvl + 1;
+                        return true;
+                    }
                 }
 
-                var unmet = document.querySelector('#buildings_unmet a[href$="' + CODES[code].name + '"]');
-                var current = game_data.village && game_data.village.buildings && game_data.village.buildings[CODES[code].name];
-                if (!current && unmet) return false;
-                levels[code] = lvl + 1;
+                var unmet = document.querySelector('#buildings_unmet a[href$="' + buildingId + '"]');
+                if (current === 0 && unmet) return false;
+                if (current === 0) return false;
             }
         } catch (e) {
             console.warn('[BuildBot] tryBuildFromQueue error:', e);
@@ -482,7 +237,7 @@
                 }
             }
 
-            var q = await getQueue();
+            var q = getQueue();
             tryBuildFromQueue(q);
         } catch (e) {
             console.warn('[BuildBot] run error:', e);
@@ -491,19 +246,232 @@
 
     function startRunLoop() {
         if (typeof cancelRunLoop === 'function') cancelRunLoop();
+        buildProgress = {};
+        isRunning = true;
         gateTimeout(function () { run(); }, 300);
-        cancelRunLoop = gateInterval(function () { run(); }, RERUN_SEC * 1000, {
+        cancelRunLoop = gateInterval(function () { run(); }, 5000, {
             jitter: [250, 750],
             requireVisible: false
         });
     }
 
+    function stopRunLoop() {
+        if (typeof cancelRunLoop === 'function') cancelRunLoop();
+        isRunning = false;
+    }
+
+    function render() {
+        var container = document.getElementById('content_value') || document.querySelector('td#content_value') || document.body;
+        var existing = document.getElementById('tkk-queue');
+        if (existing) existing.remove();
+
+        var queue = getQueue();
+        var warnings = validateQueue(queue);
+
+        var html = '<div id="tkk-queue"><br/><table class="vis" style="width:100%;">';
+
+        html += '<tr><th colspan="2" style="text-align:center;background-color:#c1a264;">Bauvorlagen-Verwaltung</th></tr>';
+
+        // Template controls
+        html += '<tr><td colspan="2" style="padding:6px;text-align:center;">';
+        html += '<select id="tkk-template-select" style="width:40%;margin-right:4px;">';
+        if (templates.length === 0) {
+            html += '<option value="">– Keine Vorlagen –</option>';
+        } else {
+            for (var ti = 0; ti < templates.length; ti++) {
+                var tName = templates[ti].name || 'Vorlage ' + (ti + 1);
+                html += '<option value="' + ti + '"' + (ti === selectedIdx ? ' selected' : '') + '>' + tName + '</option>';
+            }
+        }
+        html += '</select>';
+        html += '<input type="button" id="tkk-template-new" value="Neu" class="btn" style="width:8%;"/>';
+        html += '<input type="button" id="tkk-template-save" value="Umbenennen" class="btn" style="width:12%;"/>';
+        html += '<input type="button" id="tkk-template-del" value="Löschen" class="btn" style="width:8%;"/>';
+        html += '</td></tr>';
+
+        // Fold toggle
+        var foldIcon = isFolded ? 'plus' : 'minus';
+        html += '<tr><th colspan="2"><img id="tkk-fold" src="graphic/' + foldIcon + '.png" style="vertical-align:-4px;cursor:pointer;"/> Bau-Reihenfolge</th></tr>';
+
+        if (!isFolded) {
+            // Queue display
+            html += '<tr><td colspan="2" style="padding:4px;">';
+            html += '<table class="vis" style="width:100%;">';
+            html += '<tr><th style="width:40px;">#</th><th>Gebäude</th><th style="width:60px;">Stufe</th><th style="width:30px;"></th></tr>';
+
+            if (queue.length === 0) {
+                html += '<tr><td colspan="4" style="text-align:center;padding:8px;color:#888;">Keine Einträge. Füge Gebäude hinzu.</td></tr>';
+            } else {
+                for (var qi = 0; qi < queue.length; qi++) {
+                    var e = queue[qi];
+                    var bName = getBuildingName(e.building);
+                    var w = validateEntry(e);
+                    var color = w.length > 0 ? '#a009' : '#5a09';
+                    html += '<tr>';
+                    html += '<td style="text-align:center;background:' + color + ';">' + (qi + 1) + '</td>';
+                    html += '<td>' + bName + '</td>';
+                    html += '<td style="text-align:center;">' + e.level + '</td>';
+                    html += '<td><a href="#" class="tkk-remove-entry" data-idx="' + qi + '" style="color:#a00;text-decoration:none;">✖</a></td>';
+                    html += '</tr>';
+                }
+            }
+            html += '</table></td></tr>';
+
+            // Add entry form
+            html += '<tr><td colspan="2" style="padding:4px;text-align:center;">';
+            html += '<select id="tkk-add-building" style="width:40%;margin-right:4px;">';
+            for (var bi = 0; bi < BUILDINGS.length; bi++) {
+                html += '<option value="' + BUILDINGS[bi].id + '">' + BUILDINGS[bi].name + '</option>';
+            }
+            html += '</select>';
+            html += '<input type="number" id="tkk-add-level" value="1" min="1" max="30" style="width:60px;margin-right:4px;"/>';
+            html += '<input type="button" id="tkk-add-entry" value="Hinzufügen" class="btn" style="width:12%;"/>';
+            html += '<input type="button" id="tkk-clear-queue" value="Alle Leeren" class="btn" style="width:10%;"/>';
+            html += '</td></tr>';
+
+            // Validation warnings
+            if (warnings.length > 0) {
+                html += '<tr><td colspan="2" style="padding:4px;">';
+                html += '<div style="background:#fff3cd;border:1px solid #ffc107;border-radius:4px;padding:6px;font-size:12px;">';
+                html += '<b>Warnungen:</b><br/>';
+                for (var wi = 0; wi < warnings.length; wi++) {
+                    html += '⚠ ' + warnings[wi] + '<br/>';
+                }
+                html += '</div></td></tr>';
+            }
+        }
+
+        // Controls
+        html += '<tr><td colspan="2" style="text-align:center;padding:6px;">';
+        html += '<label style="margin-right:12px;"><input type="checkbox" id="tkk-quests"' + (doQuests ? ' checked' : '') + '/> Quests</label>';
+        html += '<input type="button" id="tkk-start" value="' + (isRunning ? 'Stoppen' : 'Starten') + '" class="btn" style="width:12%;"' + (queue.length === 0 ? ' disabled' : '') + '/>';
+        html += '</td></tr>';
+
+        html += '</table></div>';
+
+        var target = container.querySelector('table');
+        if (target) target.insertAdjacentHTML('afterend', html);
+        else container.insertAdjacentHTML('beforeend', html);
+    }
+
+    function wireHandlers() {
+        document.body.addEventListener('click', function (ev) {
+            var target = ev.target;
+            var id = target && target.id;
+
+            if (id === 'tkk-fold') {
+                isFolded = !isFolded;
+                GMwrap.set(KEY_FOLD, isFolded);
+                render();
+                return;
+            }
+
+            if (id === 'tkk-template-select') {
+                selectedIdx = parseInt(target.value);
+                GMwrap.set(KEY_SELECTED, selectedIdx);
+                render();
+                return;
+            }
+
+            if (id === 'tkk-template-new') {
+                (async function () {
+                    var name = prompt('Name der neuen Vorlage:');
+                    if (!name) return;
+                    templates.push({ name: name, queue: [] });
+                    selectedIdx = templates.length - 1;
+                    await saveTemplates();
+                    await GMwrap.set(KEY_SELECTED, selectedIdx);
+                    render();
+                })();
+                return;
+            }
+
+            if (id === 'tkk-template-save') {
+                (async function () {
+                    if (selectedIdx < 0 || selectedIdx >= templates.length) return;
+                    var name = prompt('Neuer Name:', templates[selectedIdx].name);
+                    if (!name) return;
+                    templates[selectedIdx].name = name;
+                    await saveTemplates();
+                    render();
+                })();
+                return;
+            }
+
+            if (id === 'tkk-template-del') {
+                (async function () {
+                    if (selectedIdx < 0 || selectedIdx >= templates.length) return;
+                    if (!confirm('Vorlage "' + templates[selectedIdx].name + '" wirklich löschen?')) return;
+                    templates.splice(selectedIdx, 1);
+                    if (selectedIdx >= templates.length) selectedIdx = templates.length - 1;
+                    await saveTemplates();
+                    await GMwrap.set(KEY_SELECTED, selectedIdx);
+                    render();
+                })();
+                return;
+            }
+
+            if (id === 'tkk-add-entry') {
+                (async function () {
+                    var building = document.getElementById('tkk-add-building').value;
+                    var level = parseInt(document.getElementById('tkk-add-level').value) || 1;
+                    if (!building) return;
+                    var q = getQueue().slice();
+                    q.push({ building: building, level: level });
+                    await setQueue(q);
+                    render();
+                })();
+                return;
+            }
+
+            if (id === 'tkk-clear-queue') {
+                (async function () {
+                    if (!confirm('Wirklich alle Einträge löschen?')) return;
+                    await setQueue([]);
+                    render();
+                })();
+                return;
+            }
+
+            if (id === 'tkk-start') {
+                if (isRunning) {
+                    stopRunLoop();
+                    render();
+                } else {
+                    startRunLoop();
+                    render();
+                }
+                return;
+            }
+
+            // Remove entry buttons
+            if (target.classList && target.classList.contains('tkk-remove-entry')) {
+                (async function () {
+                    var idx = parseInt(target.getAttribute('data-idx'));
+                    var q = getQueue().slice();
+                    if (idx >= 0 && idx < q.length) {
+                        q.splice(idx, 1);
+                        await setQueue(q);
+                        render();
+                    }
+                })();
+                return;
+            }
+        });
+
+        document.body.addEventListener('change', function (ev) {
+            if (ev.target && ev.target.id === 'tkk-quests') {
+                doQuests = ev.target.checked;
+                GMwrap.set(KEY_QUESTS, doQuests);
+            }
+        });
+    }
+
     (async function init() {
         try {
-            selectedT = parseInt(await GMwrap.get(KEY_SELECTED(VILLAGE_ID), 1));
-            if (selectedT > TEMPLATES_COUNT) selectedT = 1;
-            stateFold = await GMwrap.get(KEY_STATE, 'minus');
             doQuests = await GMwrap.get(KEY_QUESTS, false);
+            isFolded = await GMwrap.get(KEY_FOLD, false);
+            await loadTemplates();
 
             var waitForContent = setInterval(function () {
                 var cv = document.getElementById('content_value') || document.querySelector('td#content_value');
@@ -511,13 +479,12 @@
                 clearInterval(waitForContent);
 
                 (async function () {
-                    await draw();
+                    render();
                     wireHandlers();
 
                     if (typeof cancelRepaintLoop === 'function') cancelRepaintLoop();
                     cancelRepaintLoop = gateInterval(function () {
-                        if (document.getElementById('tkk-queue')) levelPaint(false);
-                        else draw();
+                        if (!document.getElementById('tkk-queue')) render();
                     }, 1000, { requireVisible: false });
                 })();
             }, 100);

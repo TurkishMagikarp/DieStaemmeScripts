@@ -165,7 +165,7 @@
             var html = '<div id="tkk-queue"><br/><table class="vis" style="width:100%;"><tr>';
             html += '<th colspan="' + COLS + '" style="text-align:center;background-color:#c1a264;">Bauvorlagen</th></tr>';
             html += toolbarRow();
-            hidden = stateFold === 'plus' ? ' style="display:none;"' : '';
+            var hidden = stateFold === 'plus' ? ' style="display:none;"' : '';
             html += '<tr><th colspan="' + COLS + '"><img id="tkk-toggle" src="graphic/' + stateFold + '.png" style="vertical-align:-4px;"/>[DSU] Build Bot</th></tr>';
 
             html += '<tr role="tkk-row"' + hidden + '>';

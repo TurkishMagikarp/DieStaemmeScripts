@@ -261,97 +261,95 @@
     }
 
     function render() {
-        var container = document.getElementById('content_value') || document.querySelector('td#content_value') || document.body;
-        var existing = document.getElementById('tkk-queue');
-        if (existing) existing.remove();
+        try {
+            var container = document.getElementById('content_value') || document.querySelector('td#content_value') || document.body;
+            var existing = document.getElementById('tkk-queue');
+            if (existing) existing.remove();
 
-        var queue = getQueue();
-        var warnings = validateQueue(queue);
+            var queue = getQueue();
+            var warnings = validateQueue(queue);
 
-        var html = '<div id="tkk-queue"><br/><table class="vis" style="width:100%;">';
+            var html = '<div id="tkk-queue"><br/><table class="vis" style="width:100%;">';
 
-        html += '<tr><th colspan="2" style="text-align:center;background-color:#c1a264;">Bauvorlagen-Verwaltung</th></tr>';
+            html += '<tr><th colspan="2" style="text-align:center;background-color:#c1a264;">Bauvorlagen-Verwaltung</th></tr>';
 
-        // Template controls
-        html += '<tr><td colspan="2" style="padding:6px;text-align:center;">';
-        html += '<select id="tkk-template-select" style="width:40%;margin-right:4px;">';
-        if (templates.length === 0) {
-            html += '<option value="">– Keine Vorlagen –</option>';
-        } else {
-            for (var ti = 0; ti < templates.length; ti++) {
-                var tName = templates[ti].name || 'Vorlage ' + (ti + 1);
-                html += '<option value="' + ti + '"' + (ti === selectedIdx ? ' selected' : '') + '>' + tName + '</option>';
-            }
-        }
-        html += '</select>';
-        html += '<input type="button" id="tkk-template-new" value="Neu" class="btn" style="width:8%;"/>';
-        html += '<input type="button" id="tkk-template-save" value="Umbenennen" class="btn" style="width:12%;"/>';
-        html += '<input type="button" id="tkk-template-del" value="Löschen" class="btn" style="width:8%;"/>';
-        html += '</td></tr>';
-
-        // Fold toggle
-        var foldIcon = isFolded ? 'plus' : 'minus';
-        html += '<tr><th colspan="2"><img id="tkk-fold" src="graphic/' + foldIcon + '.png" style="vertical-align:-4px;cursor:pointer;"/> Bau-Reihenfolge</th></tr>';
-
-        if (!isFolded) {
-            // Queue display
-            html += '<tr><td colspan="2" style="padding:4px;">';
-            html += '<table class="vis" style="width:100%;">';
-            html += '<tr><th style="width:40px;">#</th><th>Gebäude</th><th style="width:60px;">Stufe</th><th style="width:30px;"></th></tr>';
-
-            if (queue.length === 0) {
-                html += '<tr><td colspan="4" style="text-align:center;padding:8px;color:#888;">Keine Einträge. Füge Gebäude hinzu.</td></tr>';
+            html += '<tr><td colspan="2" style="padding:6px;text-align:center;">';
+            html += '<select id="tkk-template-select" style="width:40%;margin-right:4px;">';
+            if (templates.length === 0) {
+                html += '<option value="">– Keine Vorlagen –</option>';
             } else {
-                for (var qi = 0; qi < queue.length; qi++) {
-                    var e = queue[qi];
-                    var bName = getBuildingName(e.building);
-                    var w = validateEntry(e);
-                    var color = w.length > 0 ? '#a009' : '#5a09';
-                    html += '<tr>';
-                    html += '<td style="text-align:center;background:' + color + ';">' + (qi + 1) + '</td>';
-                    html += '<td>' + bName + '</td>';
-                    html += '<td style="text-align:center;">' + e.level + '</td>';
-                    html += '<td><a href="#" class="tkk-remove-entry" data-idx="' + qi + '" style="color:#a00;text-decoration:none;">✖</a></td>';
-                    html += '</tr>';
+                for (var ti = 0; ti < templates.length; ti++) {
+                    var tName = templates[ti].name || 'Vorlage ' + (ti + 1);
+                    html += '<option value="' + ti + '"' + (ti === selectedIdx ? ' selected' : '') + '>' + tName + '</option>';
                 }
-            }
-            html += '</table></td></tr>';
-
-            // Add entry form
-            html += '<tr><td colspan="2" style="padding:4px;text-align:center;">';
-            html += '<select id="tkk-add-building" style="width:40%;margin-right:4px;">';
-            for (var bi = 0; bi < BUILDINGS.length; bi++) {
-                html += '<option value="' + BUILDINGS[bi].id + '">' + BUILDINGS[bi].name + '</option>';
             }
             html += '</select>';
-            html += '<input type="number" id="tkk-add-level" value="1" min="1" max="30" style="width:60px;margin-right:4px;"/>';
-            html += '<input type="button" id="tkk-add-entry" value="Hinzufügen" class="btn" style="width:12%;"/>';
-            html += '<input type="button" id="tkk-clear-queue" value="Alle Leeren" class="btn" style="width:10%;"/>';
+            html += '<input type="button" id="tkk-template-new" value="Neu" class="btn" style="width:8%;"/>';
+            html += '<input type="button" id="tkk-template-save" value="Umbenennen" class="btn" style="width:12%;"/>';
+            html += '<input type="button" id="tkk-template-del" value="Löschen" class="btn" style="width:8%;"/>';
             html += '</td></tr>';
 
-            // Validation warnings
-            if (warnings.length > 0) {
+            var foldIcon = isFolded ? 'plus' : 'minus';
+            html += '<tr><th colspan="2"><img id="tkk-fold" src="graphic/' + foldIcon + '.png" style="vertical-align:-4px;cursor:pointer;"/> Bau-Reihenfolge</th></tr>';
+
+            if (!isFolded) {
                 html += '<tr><td colspan="2" style="padding:4px;">';
-                html += '<div style="background:#fff3cd;border:1px solid #ffc107;border-radius:4px;padding:6px;font-size:12px;">';
-                html += '<b>Warnungen:</b><br/>';
-                for (var wi = 0; wi < warnings.length; wi++) {
-                    html += '⚠ ' + warnings[wi] + '<br/>';
+                html += '<table class="vis" style="width:100%;">';
+                html += '<tr><th style="width:40px;">#</th><th>Gebäude</th><th style="width:60px;">Stufe</th><th style="width:30px;"></th></tr>';
+
+                if (queue.length === 0) {
+                    html += '<tr><td colspan="4" style="text-align:center;padding:8px;color:#888;">Keine Einträge. Füge Gebäude hinzu.</td></tr>';
+                } else {
+                    for (var qi = 0; qi < queue.length; qi++) {
+                        var e = queue[qi];
+                        var bName = getBuildingName(e && e.building);
+                        var w = e && e.building ? validateEntry(e) : ['Ungültiger Eintrag'];
+                        var color = w.length > 0 ? '#a009' : '#5a09';
+                        html += '<tr>';
+                        html += '<td style="text-align:center;background:' + color + ';">' + (qi + 1) + '</td>';
+                        html += '<td>' + (bName || '???') + '</td>';
+                        html += '<td style="text-align:center;">' + (e ? e.level : '?') + '</td>';
+                        html += '<td><a href="#" class="tkk-remove-entry" data-idx="' + qi + '" style="color:#a00;text-decoration:none;">✖</a></td>';
+                        html += '</tr>';
+                    }
                 }
-                html += '</div></td></tr>';
+                html += '</table></td></tr>';
+
+                html += '<tr><td colspan="2" style="padding:4px;text-align:center;">';
+                html += '<select id="tkk-add-building" style="width:40%;margin-right:4px;">';
+                for (var bi = 0; bi < BUILDINGS.length; bi++) {
+                    html += '<option value="' + BUILDINGS[bi].id + '">' + BUILDINGS[bi].name + '</option>';
+                }
+                html += '</select>';
+                html += '<input type="number" id="tkk-add-level" value="1" min="1" max="30" style="width:60px;margin-right:4px;"/>';
+                html += '<input type="button" id="tkk-add-entry" value="Hinzufügen" class="btn" style="width:12%;"/>';
+                html += '<input type="button" id="tkk-clear-queue" value="Alle Leeren" class="btn" style="width:10%;"/>';
+                html += '</td></tr>';
+
+                if (warnings.length > 0) {
+                    html += '<tr><td colspan="2" style="padding:4px;">';
+                    html += '<div style="background:#fff3cd;border:1px solid #ffc107;border-radius:4px;padding:6px;font-size:12px;">';
+                    html += '<b>Warnungen:</b><br/>';
+                    for (var wi = 0; wi < warnings.length; wi++) {
+                        html += '⚠ ' + warnings[wi] + '<br/>';
+                    }
+                    html += '</div></td></tr>';
+                }
             }
+
+            html += '<tr><td colspan="2" style="text-align:center;padding:6px;">';
+            html += '<label style="margin-right:12px;"><input type="checkbox" id="tkk-quests"' + (doQuests ? ' checked' : '') + '/> Quests</label>';
+            html += '<input type="button" id="tkk-start" value="' + (isRunning ? 'Stoppen' : 'Starten') + '" class="btn" style="width:12%;"' + (queue.length === 0 ? ' disabled' : '') + '/>';
+            html += '</td></tr>';
+
+            html += '</table></div>';
+
+            var target = container.querySelector('table');
+            if (target) target.insertAdjacentHTML('afterend', html);
+            else container.insertAdjacentHTML('beforeend', html);
+        } catch (e) {
+            console.error('[BuildBot] render error:', e);
         }
-
-        // Controls
-        html += '<tr><td colspan="2" style="text-align:center;padding:6px;">';
-        html += '<label style="margin-right:12px;"><input type="checkbox" id="tkk-quests"' + (doQuests ? ' checked' : '') + '/> Quests</label>';
-        html += '<input type="button" id="tkk-start" value="' + (isRunning ? 'Stoppen' : 'Starten') + '" class="btn" style="width:12%;"' + (queue.length === 0 ? ' disabled' : '') + '/>';
-        html += '</td></tr>';
-
-        html += '</table></div>';
-
-        var target = container.querySelector('table');
-        if (target) target.insertAdjacentHTML('afterend', html);
-        else container.insertAdjacentHTML('beforeend', html);
     }
 
     function wireHandlers() {

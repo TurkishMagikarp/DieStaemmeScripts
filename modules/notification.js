@@ -27,7 +27,7 @@
   // -----------------------------
   const POPUP = {
     enabled: true,
-    id: "2026-05-15-relaunch-v2",
+    id: "2026-05-17-changelog-v2",
     title: "DS-Tools - Ankündigung",
     headline: `Meine Freunde, wir sind zurück!`,
     profileImage:
@@ -35,10 +35,25 @@
     headerNote:
       "Das Ding wird jetzt maintained. Props an den alten Entwickler SpeckMich für die geile Basis!",
     body: [
-      "Als neue Features gibt es:",
-      "• Fake-Angriffs-Generator — Massenhaft Fake-Angriffe aus X Dörfern auf Y Ziele mit konfigurierbarem Zeit-Spread",
-      "• Farm-Space-Prognose — Zeigt Dir, wann Dein Farm-Space voll läuft, basierend auf aktuellen Rekrutierungs- und Bau-Aufträgen",
-      "• Bot-Schutz Button-Klicker — Klickt automatisch den \"Beginne Bot Schutz Prüfung\"-Button. Erfordert eine externe Captcha-Löser-Erweiterung (<a href=\"https://chromewebstore.google.com/detail/hektcaptcha-hcaptcha-solv/bpfdbfnkjelhloljelooneehdalcmljb\" target=\"_blank\" rel=\"noopener noreferrer\">HektCaptcha</a>).",
+      "<b>Changelog v3.7.1</b>",
+      "",
+      "<b>✦ Neue Features</b>",
+      "• <b>Fake-Angriffs-Generator</b> — Massenhaft Fake-Angriffe aus X Dörfern auf Y Ziele mit konfigurierbarem Zeit-Spread",
+      "• <b>Farm-Space-Prognose</b> — Zeigt Dir, wann Dein Farm-Space voll läuft, basierend auf aktuellen Rekrutierungs- und Bau-Aufträgen",
+      "• <b>Bot-Schutz Button-Klicker</b> — Klickt automatisch den \"Beginne Bot Schutz Prüfung\"-Button. Erfordert eine externe Captcha-Löser-Erweiterung (<a href=\"https://chromewebstore.google.com/detail/hektcaptcha-hcaptcha-solv/bpfdbfnkjelhloljelooneehdalcmljb\" target=\"_blank\" rel=\"noopener noreferrer\">HektCaptcha</a>).",
+      "",
+      "<b>✦ Verbesserungen</b>",
+      "• <b>buildQueue</b> — Komplett überarbeitet: eigene benannte Templates statt hartcodierter Fallbacks, Drag & Drop, Export/Import",
+      "• <b>buildOptimizer</b> — Präzisere Bauzeit-Kalibrierung und bessere Queue-Integration",
+      "• <b>captchaSolver</b> — 2captcha-Abhängigkeit entfernt, fungiert jetzt als reiner Button-Klicker + Dauerüberwachung",
+      "• <b>farmAssistantAuto</b> — Validierung für Delay/Reload-Einstellungen hinzugefügt",
+      "",
+      "<b>✦ Bugfixes</b>",
+      "• buildQueue: Fold-Status-Migration von alten String-Werten (minus/plus) zu Boolean gefixt",
+      "• buildQueue: try-catch in render und Null-Safety für Queue-Einträge",
+      "• buildQueue: await GM.setValue damit Queue-Daten tatsächlich persistieren",
+      "• Diverse kleinere Stabilitätsverbesserungen",
+      "",
       "Weitere Features sind in Planung!",
     ],
     links: [

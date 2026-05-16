@@ -54,6 +54,13 @@
     const RES_MAP = { timber: 'wood', clay: 'stone', iron: 'iron' };
     const INTERNAL_MAP = { wood: 'timber', stone: 'clay' };
 
+    const BUILD_QUEUE_CODE_MAP = {
+        timber: 0, clay: 1, iron: 2, farm: 3, storage: 4, main: 5,
+        place: 6, statue: 7, smith: 8, barracks: 9, stable: 10,
+        garage: 11, market: 12, wall: 13, hide: 14, snob: 15,
+        church: 16, watchtower: 17
+    };
+
     // =========================================================================
     //  STATE
     // =========================================================================
@@ -188,7 +195,7 @@
         return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
     }
 
-    function fmtRes(r) { return (r.wood || 0) + ' / ' + (r.clay || 0) + ' / ' + (r.iron || 0); }
+    function fmtRes(r) { return fmtNum(r.wood || 0) + ' / ' + fmtNum(r.clay || 0) + ' / ' + fmtNum(r.iron || 0); }
     function cloneObj(o) { return JSON.parse(JSON.stringify(o)); }
 
     function getBuildingName(id) { return N_NAMES[id] || id; }
@@ -514,24 +521,14 @@
     function chooseAction(actions, targetBuilding) {
         if (!actions.length) return null;
         actions.sort(function (a, b) {
+            if (Math.abs(a.waitTime - b.waitTime) > 1) return a.waitTime - b.waitTime;
+            if (a.isRequired !== b.isRequired) return a.isRequired ? -1 : 1;
+            if (a.isMine !== b.isMine) return a.isMine ? -1 : 1;
             if (a.building === targetBuilding && b.building !== targetBuilding) return 1;
             if (a.building !== targetBuilding && b.building === targetBuilding) return -1;
-            if (a.isMain !== b.isMain) return a.isMain ? -1 : 1;
-            if (a.isMine !== b.isMine) return a.isMine ? -1 : 1;
-            if (a.isRequired !== b.isRequired) return a.isRequired ? -1 : 1;
-            if (Math.abs(a.waitTime - b.waitTime) > 1) return a.waitTime - b.waitTime;
             return a.buildTime - b.buildTime;
         });
-        var best = actions[0];
-        if (best.waitTime > 60) {
-            for (var i = 1; i < actions.length; i++) {
-                var alt = actions[i];
-                if (alt.isMine && alt.waitTime === 0 && alt.buildTime < best.waitTime / 4) {
-                    return alt;
-                }
-            }
-        }
-        return best;
+        return actions[0];
     }
 
     // =========================================================================
@@ -691,6 +688,7 @@
         html += '<div style="display:flex;gap:4px;flex-shrink:0;">';
         html += '<button class="btn" onclick="DSO_copyBBCode()">📋 BBCode</button>';
         html += '<button class="btn" onclick="DSO_copyCSV()">📊 CSV</button>';
+        html += '<button class="btn" id="dso-queue-btn">🔽 Queue</button>';
         html += '</div></div>';
 
         // --- Fehler ---
@@ -747,6 +745,50 @@
         }
 
         container.innerHTML = html;
+
+        var qBtn = document.getElementById('dso-queue-btn');
+        if (qBtn) {
+            qBtn.addEventListener('click', async function () {
+                var result = wind.__dsoLastResult;
+                if (!result || !result.steps || !result.steps.length) {
+                    try { UI.ErrorMessage('Kein Optimierungsergebnis vorhanden.', 3000); } catch(e) {}
+                    return;
+                }
+                var queue = [];
+                result.steps.forEach(function (st) {
+                    var code = BUILD_QUEUE_CODE_MAP[st.building];
+                    if (code !== undefined) queue.push(String(code));
+                });
+                if (!queue.length) {
+                    try { UI.ErrorMessage('Keine baubaren Schritte in der Queue.', 3000); } catch(e) {}
+                    return;
+                }
+                var world = game_data.world;
+                var found = -1;
+                for (var ti = 1; ti <= 5; ti++) {
+                    var tk = 'dsu.buildbot.queueTemplate.' + ti + '.' + world;
+                    var existing;
+                    try {
+                        existing = typeof GM !== 'undefined' && GM.getValue ? await GM.getValue(tk) : JSON.parse(localStorage.getItem(tk) || 'null');
+                    } catch(e) { existing = null; }
+                    if (!existing || (Array.isArray(existing) && existing.every(function(v) { return v === '-' || v === null || v === undefined; }))) {
+                        found = ti; break;
+                    }
+                }
+                if (found === -1) found = 1;
+                var key = 'dsu.buildbot.queueTemplate.' + found + '.' + world;
+                try {
+                    if (typeof GM !== 'undefined' && GM.setValue) {
+                        GM.setValue(key, queue);
+                    } else {
+                        localStorage.setItem(key, JSON.stringify(queue));
+                    }
+                    try { UI.SuccessMessage('Neue Vorlage ' + found + ' erstellt – ' + queue.length + ' Schritte.', 4000); } catch(e) {}
+                } catch (e) {
+                    try { UI.ErrorMessage('Export fehlgeschlagen: ' + e.message, 3000); } catch(ex) {}
+                }
+            });
+        }
 
         if (!document.getElementById('dso-style')) {
             var s = document.createElement('style');
@@ -865,6 +907,7 @@
             var startRes = currentResources();
             var startBld = currentBuildings();
             var result = optimize(targetUnit, startRes, startBld);
+            wind.__dsoLastResult = result;
             var diffTotal = null;
             var resultMines = null;
             var mineTargetsPlus = {

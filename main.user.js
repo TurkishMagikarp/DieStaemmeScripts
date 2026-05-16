@@ -1,14 +1,13 @@
 // ==UserScript==
 // @name         TurkishMagikarps Die Stämme Tool Collection
 // @namespace    https://github.com/TurkishMagikarp
-// @version      3.6.2
+// @version      3.7.0
 // @description  Erweitert die Die Stämme Erfahrung mit einigen Tools und Skripten
 // @author       TurkishMagikarp (Original: SpeckMich)
 // @connect      raw.githubusercontent.com
 // @connect      localhost
 // @connect      cdn.jsdelivr.net
 // @connect      discord.com
-// @connect      2captcha.com
 // @match        https://*.die-staemme.de/game.php?*
 // @match        https://*ds-ultimate.de/tools/attackPlanner/*
 // @match        https://twforge.net/worlds/*/planner/plans/*
@@ -47,6 +46,7 @@
       ".bot-protection-row",
       ".bot-protection-blur",
       "#content_value .captcha",
+      "[data-bot-protect]",
     ];
 
     const isVisible = (el) =>
@@ -966,6 +966,11 @@
     window.DS_ENV = env;
     window.DS_IS_DEV = env === "dev";
 
+    if (!window.DS_IS_DEV) {
+      console.log = function () {};
+      console.info = function () {};
+    }
+
     let modules = CONFIG.modules; // Fallback
     let assetsBase = "";
 
@@ -1045,17 +1050,7 @@
                        value="${window.DS_USER_SETTINGS.incWebhookURL || ""}">
             </td>
         </tr>
-        <tr>
-            <td style="width:220px;font-weight:bold;">2captcha API-Key:</td>
-            <td>
-                <input id="ds-setting-captchaApiKey"
-                       type="text"
-                       class="vis input"
-                       style="width:100%;"
-                       value="${window.DS_USER_SETTINGS.captchaApiKey || ""}">
-                <div class="grey" style="font-size:11px;margin-top:2px;">Wird vom Auto-Captcha-Solver verwendet. Erhältlich auf <a href="https://2captcha.com" target="_blank">2captcha.com</a></div>
-            </td>
-        </tr>
+
     </table>
 </div>
 
@@ -1164,9 +1159,6 @@
           incWebhookURL: document
             .getElementById("ds-setting-incWebhookURL")
             .value.trim(),
-          captchaApiKey: document
-            .getElementById("ds-setting-captchaApiKey")
-            .value.trim(),
         };
         await saveUserSettings(nextUserSettings);
         window.DS_USER_SETTINGS = nextUserSettings;
@@ -1206,6 +1198,29 @@
 
     if (DS_BotGuard.isActive()) {
       DS_BotGuard.mountBanner();
+
+      // Load captchaSolver even during Bot-Schutz
+      (async () => {
+        try {
+          const env = await getEnv();
+          const baseUrl = env === 'dev'
+            ? 'http://localhost:8123'
+            : 'https://raw.githubusercontent.com/TurkishMagikarp/DieStaemmeScripts/master';
+          const url = cacheBust(baseUrl + '/modules/captchaSolver.js');
+          const code = await new Promise((resolve, reject) => {
+            GM_xmlhttpRequest({
+              method: 'GET', url,
+              onload: (r) => resolve(r.responseText),
+              onerror: reject, timeout: 15000,
+            });
+          });
+          eval(code + '\n//# sourceURL=' + url);
+          log.info('CaptchaSolver geladen (Bot-Schutz-Modus).');
+        } catch (e) {
+          log.warn('CaptchaSolver laden fehlgeschlagen:', e);
+        }
+      })();
+
       // Re-arm when protection disappears
       const off = DS_BotGuard.onChange((active) => {
         if (!active) {
@@ -1214,7 +1229,6 @@
           run();
         }
       });
-      // Do nothing else while active.
     } else {
       run();
     }

@@ -46,8 +46,8 @@
       {
         "url": "modules/captchaSolver.js",
         "id": "captchaSolver",
-        "title": "Global: Auto-Captcha-Solver (2captcha)",
-        "desc": "Löst Bot-Schutz Captchas automatisch via 2captcha.com API. Erfordert API-Key in den Einstellungen.",
+        "title": "Global: Bot-Schutz Button-Klicker",
+        "desc": "Klickt automatisch den \"Beginne Bot Schutz Prüfung\"-Button sowie das Pre-Stage-Bot-Icon, sobald diese erscheinen. Erfordert eine externe Captcha-Löser-Erweiterung.",
         "defaultEnabled": true,
         "compliance": "illegal"
       }
@@ -364,6 +364,14 @@
         "id": "farmSpaceForecaster",
         "title": "Hauptgebäude: Farm-Space-Prognose",
         "desc": "Zeigt eine Vorhersage, wann der Farm-Space voll sein wird, basierend auf aktueller Rekrutierung und Ausbau-Warteschlange.",
+        "defaultEnabled": true,
+        "compliance": "legal"
+      },
+      {
+        "url": "modules/buildOptimizer.js",
+        "id": "buildOptimizer",
+        "title": "Hauptgebäude: Bau-Optimierer",
+        "desc": "Berechnet den optimalen Ausbau-Pfad für eine Zieleinheit (z.B. LKav) unter Berücksichtigung von Quest-Belohnungen, parallelen Bauplätzen und Welten-Einstellungen.",
         "defaultEnabled": true,
         "compliance": "legal"
       }

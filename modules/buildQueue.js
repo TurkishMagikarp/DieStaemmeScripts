@@ -470,7 +470,8 @@
     (async function init() {
         try {
             doQuests = await GMwrap.get(KEY_QUESTS, false);
-            isFolded = await GMwrap.get(KEY_FOLD, false);
+            var foldRaw = await GMwrap.get(KEY_FOLD, false);
+            isFolded = foldRaw === true || foldRaw === 'plus';
             await loadTemplates();
 
             var waitForContent = setInterval(function () {

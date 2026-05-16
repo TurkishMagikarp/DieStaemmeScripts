@@ -3,7 +3,7 @@
 // @namespace    https://github.com/TurkishMagikarp/DieStaemmeScripts
 // @version      1.4.0
 // @description  Im Karten-Hover: Späh-Rohstoffe + Gebäude als DS-Icon-Gitter (statt Links/Rechts-Tabellen). Sucht den neuesten Bericht automatisch und cached ihn.
-// @author       SpeckMich
+// @author       TurkishMagikarp
 // @match        https://*.die-staemme.de/game.php?*&screen=map*
 // @match        https://*.die-staemme.de/game.php?*&screen=report*
 // @run-at       document-idle

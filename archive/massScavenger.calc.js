@@ -2,7 +2,7 @@
 // @name         DS → Mass Scavenger Calculator (Simple Auto + Per-Village Max)
 // @version      0.5.1
 // @description  Nutzt die Units aus dem Massenraubzug-Snippet, teilt ausgewählte Units durch Anzahl Scavenges im Dorf und füllt immer den nächsten freien Slot. Auto-Loop mit Senden. Pro Dorf: aktivierbare Units + Max je Unit (Max wird auf alle Slots des Dorfs verteilt, z.B. 200/4=50).
-// @author       SpeckMich
+// @author       TurkishMagikarp
 // @match        https://*.die-staemme.de/game.php?*&screen=place&mode=scavenge_mass*
 // @run-at       document-idle
 // ==/UserScript==

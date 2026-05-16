@@ -99,9 +99,8 @@
     if (domCheckInterval) return;
     domCheckInterval = setInterval(function () {
       if (solving) return;
-      var bg = window.DS_BotGuard;
-      if (bg && bg.isActive && bg.isActive()) attemptSolve();
-    }, 2000);
+      attemptSolve();
+    }, 1000);
   }
 
   var domCheckInterval = null;

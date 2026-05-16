@@ -38,7 +38,7 @@
       "Als neue Features gibt es:",
       "• Fake-Angriffs-Generator — Massenhaft Fake-Angriffe aus X Dörfern auf Y Ziele mit konfigurierbarem Zeit-Spread",
       "• Farm-Space-Prognose — Zeigt Dir, wann Dein Farm-Space voll läuft, basierend auf aktuellen Rekrutierungs- und Bau-Aufträgen",
-      "• Auto-Captcha-Solver — Erkennt Bot-Schutz-Captchas automatisch und löst sie via 2captcha.com API (API-Key erforderlich)",
+      "• Bot-Schutz Button-Klicker — Klickt automatisch den \"Beginne Bot Schutz Prüfung\"-Button. Erfordert eine externe Captcha-Löser-Erweiterung (https://chromewebstore.google.com/detail/hektcaptcha-hcaptcha-solv/bpfdbfnkjelhloljelooneehdalcmljb).",
       "Weitere Features sind in Planung!",
     ],
     links: [

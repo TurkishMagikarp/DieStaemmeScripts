@@ -47,7 +47,7 @@
         "url": "modules/captchaSolver.js",
         "id": "captchaSolver",
         "title": "Global: Bot-Schutz Button-Klicker",
-        "desc": "Klickt automatisch den \"Beginne Bot Schutz Prüfung\"-Button sowie das Pre-Stage-Bot-Icon, sobald diese erscheinen. Erfordert eine externe Captcha-Löser-Erweiterung.",
+        "desc": "Klickt automatisch den \"Beginne Bot Schutz Prüfung\"-Button sowie das Pre-Stage-Bot-Icon, sobald diese erscheinen. Erfordert eine externe Captcha-Löser-Erweiterung (https://chromewebstore.google.com/detail/hektcaptcha-hcaptcha-solv/bpfdbfnkjelhloljelooneehdalcmljb).",
         "defaultEnabled": true,
         "compliance": "illegal"
       }

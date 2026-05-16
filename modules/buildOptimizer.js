@@ -86,6 +86,7 @@
     let serverConf = null;
     let unitConf = null;
     let isComputing = false;
+    let buildTimeCalibrationRatio = null;
     const OPT_SEARCH = {
         beamWidth: 72,
         branchFactor: 4,
@@ -275,7 +276,7 @@
         return 1.18 * Math.pow(factor, exponent);
     }
 
-    function getBuildTime(building, lvl, hqLvl) {
+    function getBuildTimeRaw(building, lvl, hqLvl) {
         building = RES_MAP[building] || building;
         var base;
         if (buildConf && buildConf[building]) base = parseFloat(buildConf[building].build_time) || 150;
@@ -286,6 +287,98 @@
         ml = Math.max(0, ml);
         var hq = Math.pow(1.05, -ml);
         return base * hq * getLevelFactor(lvl, building);
+    }
+
+    function parseDurationToSeconds(text) {
+        if (!text) return null;
+        var m = String(text).match(/(\d{1,4}):(\d{2}):(\d{2})/);
+        if (!m) return null;
+        var h = parseInt(m[1], 10);
+        var min = parseInt(m[2], 10);
+        var sec = parseInt(m[3], 10);
+        if (!Number.isFinite(h) || !Number.isFinite(min) || !Number.isFinite(sec)) return null;
+        return h * 3600 + min * 60 + sec;
+    }
+
+    function getMedian(values) {
+        if (!values || !values.length) return null;
+        var arr = values.slice().sort(function (a, b) { return a - b; });
+        var mid = Math.floor(arr.length / 2);
+        if (arr.length % 2 === 1) return arr[mid];
+        return (arr[mid - 1] + arr[mid]) / 2;
+    }
+
+    function extractRowDurationSeconds(row) {
+        if (!row) return null;
+        var candidates = [
+            row.querySelector('td.nowrap.lit-item'),
+            row.querySelector('.build_duration'),
+            row.querySelector('.build_time'),
+            row.querySelector('.timer')
+        ];
+        for (var i = 0; i < candidates.length; i++) {
+            var c = candidates[i];
+            var secs = c ? parseDurationToSeconds(c.textContent) : null;
+            if (secs && secs > 0) return secs;
+        }
+        return parseDurationToSeconds(row.textContent || '');
+    }
+
+    function estimateBuildTimeCalibration() {
+        try {
+            var links = document.querySelectorAll('a[id^="main_buildlink_"]');
+            if (!links || links.length === 0) return 1;
+
+            var ratios = [];
+            var seen = new Set();
+            var fallbackHq = game_data && game_data.village && game_data.village.buildings
+                ? parseInt(game_data.village.buildings.main, 10) || 0
+                : 0;
+
+            for (var i = 0; i < links.length; i++) {
+                var link = links[i];
+                var id = link && link.id ? link.id : '';
+                var m = id.match(/^main_buildlink_([a-z_]+)_(\d+)/i);
+                if (!m) continue;
+
+                var bid = m[1];
+                var lvl = parseInt(m[2], 10);
+                if (!Number.isFinite(lvl) || lvl < 1) continue;
+
+                var key = bid + ':' + lvl;
+                if (seen.has(key)) continue;
+                seen.add(key);
+
+                var row = link.closest('tr');
+                var actualSecs = extractRowDurationSeconds(row);
+                if (!actualSecs || actualSecs <= 0) continue;
+
+                var predictedSecs = getBuildTimeRaw(bid, lvl, fallbackHq);
+                if (!Number.isFinite(predictedSecs) || predictedSecs <= 0) continue;
+
+                var ratio = actualSecs / predictedSecs;
+                if (!Number.isFinite(ratio)) continue;
+                if (ratio < 0.6 || ratio > 1.8) continue;
+                ratios.push(ratio);
+            }
+
+            if (ratios.length < 2) return 1;
+            var med = getMedian(ratios);
+            if (!Number.isFinite(med)) return 1;
+            return Math.max(0.75, Math.min(1.35, med));
+        } catch (e) {
+            return 1;
+        }
+    }
+
+    function getBuildTime(building, lvl, hqLvl) {
+        var raw = getBuildTimeRaw(building, lvl, hqLvl);
+        if (!Number.isFinite(raw) || raw <= 0) return raw;
+        if (buildTimeCalibrationRatio === null) {
+            buildTimeCalibrationRatio = estimateBuildTimeCalibration();
+        }
+        var ratio = Number.isFinite(buildTimeCalibrationRatio) ? buildTimeCalibrationRatio : 1;
+        return raw * ratio;
     }
 
 
@@ -1055,6 +1148,7 @@
 
             var startRes = currentResources();
             var startBld = currentBuildings();
+            buildTimeCalibrationRatio = null;
             var result = optimize(targetUnit, startRes, startBld);
             wind.__dsoLastResult = result;
             renderOverlay(result, targetUnit, null, null);

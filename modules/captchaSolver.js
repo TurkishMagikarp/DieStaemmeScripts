@@ -4,6 +4,7 @@
   window.__dsCaptchaSolverLoaded = true;
 
   var solving = false;
+  var CHECK_INTERVAL_MS = 3000;
 
   var PRE_STAGE_SELECTORS = [
     '#bot-icon',
@@ -38,6 +39,12 @@
       '.bot-protection-blur button',
       '.bot-protection-blur a',
       '.bot-protection-blur input[type="submit"]',
+      '.bot-protection-row a.btn.btn-default',
+      '.bot-protection-row a.btn-default',
+      '.bot-protection-row button',
+      '.bot-protection-row input[type="submit"]',
+      'td.bot-protection-row a.btn.btn-default',
+      'td.bot-protection-row a.btn-default',
     ];
     for (var i = 0; i < selectors.length; i++) {
       try {
@@ -49,9 +56,20 @@
         }
       } catch (e) {}
     }
-    var all = document.querySelectorAll('.bot-protection-blur button, .bot-protection-blur a, .bot-protection-blur input[type="submit"]');
+    var all = document.querySelectorAll(
+      '.bot-protection-blur button, .bot-protection-blur a, .bot-protection-blur input[type="submit"], ' +
+      '.bot-protection-row button, .bot-protection-row a, .bot-protection-row input[type="submit"], ' +
+      'td.bot-protection-row button, td.bot-protection-row a, td.bot-protection-row input[type="submit"]'
+    );
     for (var i = 0; i < all.length; i++) {
-      if (all[i].offsetParent !== null) { all[i].click(); console.log('[CaptchaSolver] Start-Button im Blur geklickt.'); return true; }
+      if (all[i].offsetParent !== null) {
+        var txt = (all[i].textContent || all[i].value || '').trim().toLowerCase();
+        if (txt.indexOf('beginne bot-schutz') !== -1 || txt.indexOf('bot-schutz-pr') !== -1 || all[i].closest('.bot-protection-row')) {
+          all[i].click();
+          console.log('[CaptchaSolver] Start-Button (Bot-Schutz) geklickt.');
+          return true;
+        }
+      }
     }
     return false;
   }
@@ -66,7 +84,7 @@
         return;
       }
 
-      if (document.querySelector('.bot-protection-blur')) {
+      if (document.querySelector('.bot-protection-blur, .bot-protection-row, td.bot-protection-row')) {
         if (clickStartButton()) {
           await new Promise(function (r) { setTimeout(r, 1500); });
           solving = false;
@@ -87,7 +105,7 @@
     var throttle = 0;
     preStageObserver = new MutationObserver(function () {
       var now = Date.now();
-      if (now - throttle < 1000) return;
+      if (now - throttle < CHECK_INTERVAL_MS) return;
       throttle = now;
       if (solving) return;
       clickPreStage();
@@ -100,7 +118,7 @@
     domCheckInterval = setInterval(function () {
       if (solving) return;
       attemptSolve();
-    }, 1000);
+    }, CHECK_INTERVAL_MS);
   }
 
   var domCheckInterval = null;

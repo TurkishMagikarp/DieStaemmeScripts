@@ -38,7 +38,7 @@
       "Als neue Features gibt es:",
       "• Fake-Angriffs-Generator — Massenhaft Fake-Angriffe aus X Dörfern auf Y Ziele mit konfigurierbarem Zeit-Spread",
       "• Farm-Space-Prognose — Zeigt Dir, wann Dein Farm-Space voll läuft, basierend auf aktuellen Rekrutierungs- und Bau-Aufträgen",
-      "• Bot-Schutz Button-Klicker — Klickt automatisch den \"Beginne Bot Schutz Prüfung\"-Button. Erfordert eine externe Captcha-Löser-Erweiterung (https://chromewebstore.google.com/detail/hektcaptcha-hcaptcha-solv/bpfdbfnkjelhloljelooneehdalcmljb).",
+      "• Bot-Schutz Button-Klicker — Klickt automatisch den \"Beginne Bot Schutz Prüfung\"-Button. Erfordert eine externe Captcha-Löser-Erweiterung (<a href=\"https://chromewebstore.google.com/detail/hektcaptcha-hcaptcha-solv/bpfdbfnkjelhloljelooneehdalcmljb\" target=\"_blank\" rel=\"noopener noreferrer\">HektCaptcha</a>).",
       "Weitere Features sind in Planung!",
     ],
     links: [

@@ -2,7 +2,7 @@
 // @name         DS → Scavenger Auto (safe timing, split-friendly)
 // @version      2.2.0
 // @description  Auto plan/fill via DSScavenger + sequential start clicks with safe delays. Robust reload right after returns hit 00:00:00. Bot-Schutz safe.
-// @author       SpeckMich
+// @author       TurkishMagikarp (original: Speckmich)
 // @match        https://*.die-staemme.de/game.php?*&screen=place&mode=scavenge*
 // @run-at       document-idle
 // ==/UserScript==

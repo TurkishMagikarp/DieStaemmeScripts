@@ -33,7 +33,7 @@
     profileImage:
       "https://img.pokemondb.net/artwork/large/magikarp.jpg",
     headerNote:
-      "Das Ding wird jetzt maintained. Props an den alten Entwickler SpeckMich für die geile Basis!",
+      "Das Ding wird jetzt maintained. Props an TurkishMagikarp (original: Speckmich) für die geile Basis!",
     body: [
       "<b>Changelog v3.7.1</b>",
       "",

@@ -1,5 +1,5 @@
 // ==UserScript Module==
-// SpeckMichs Baba Farmer – Modulversion für DS-Tools (place-screen)
+// Baba Farmer – Modulversion für DS-Tools (place-screen) | TurkishMagikarp (original: Speckmich)
 
 (function () {
   "use strict";

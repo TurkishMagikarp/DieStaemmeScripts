@@ -2,7 +2,7 @@
 // @name         DS → Scavenger Calculator (Mini Raubzug-Sender)
 // @version      1.1.0
 // @description  Rechner + Füll-Logik (Equal Time / Ressourcen pro Stunde). KEIN Auto-Send. Ignoriert laufende Slots bei der Verteilung.
-// @author       SpeckMich
+// @author       TurkishMagikarp (original: Speckmich)
 // @match        https://*.die-staemme.de/game.php?*&screen=place&mode=scavenge*
 // @run-at       document-idle
 // ==/UserScript==

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TurkishMagikarps Die Stämme Tool Collection
 // @namespace    https://github.com/TurkishMagikarp
-// @version      3.7.4
+// @version      3.7.5
 // @description  Erweitert die Die Stämme Erfahrung mit einigen Tools und Skripten
 // @author       TurkishMagikarp (original: Speckmich)
 // @connect      raw.githubusercontent.com
@@ -739,8 +739,12 @@
             try {
               const code = res.responseText;
               // eslint-disable-next-line no-eval
-              if (DS_BotGuard.isActive()) { return resolve(); // skip executing this module 
-                }
+              if (DS_BotGuard.isActive()) {
+                const isCaptchaSolver = /(?:^|\/)captchaSolver\.js(?:\?|$)/i.test(
+                  String(url)
+                );
+                if (!isCaptchaSolver) return resolve(); // Bot-Schutz: only captchaSolver may execute
+              }
 
               eval(code + "\n//# sourceURL=" + url);
             } catch (e) {
@@ -1020,6 +1024,18 @@
     location.assign(u.toString());
   }
 
+  const DS_BOT_RELOAD_GUARD_KEY = "ds_tools_bot_reload_guard";
+  function botGuardReloadOnce() {
+    try {
+      const now = Date.now();
+      const last = Number(sessionStorage.getItem(DS_BOT_RELOAD_GUARD_KEY) || "0");
+      if (Number.isFinite(last) && now - last < 12000) return false;
+      sessionStorage.setItem(DS_BOT_RELOAD_GUARD_KEY, String(now));
+    } catch {}
+    reloadWithCacheBust();
+    return true;
+  }
+
   async function renderSettingsPage(mods, assetsBase) {
     const container = document.querySelector("#content_value") || document.body;
     container.innerHTML = "";
@@ -1230,6 +1246,11 @@
         }
       });
     } else {
+      const offReload = DS_BotGuard.onChange((active) => {
+        if (!active) return;
+        offReload();
+        botGuardReloadOnce();
+      });
       run();
     }
   })();

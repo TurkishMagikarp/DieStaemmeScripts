@@ -5,6 +5,9 @@
 
   var solving = false;
   var CHECK_INTERVAL_MS = 3000;
+  var RELOAD_COOLDOWN_MS = 12000;
+  var lastInteractionTs = Date.now();
+  var lastReloadTs = 0;
 
   var PRE_STAGE_SELECTORS = [
     '#bot-icon',
@@ -26,6 +29,7 @@
         var el = document.querySelector(PRE_STAGE_SELECTORS[i]);
         if (el && el.offsetParent !== null) {
           el.click();
+          lastInteractionTs = Date.now();
           console.log('[CaptchaSolver] Pre-Stage Männchen geklickt.');
           return true;
         }
@@ -51,6 +55,7 @@
         var el = document.querySelector(selectors[i]);
         if (el && el.offsetParent !== null) {
           el.click();
+          lastInteractionTs = Date.now();
           console.log('[CaptchaSolver] "Beginne Bot-Schutz" geklickt.');
           return true;
         }
@@ -66,6 +71,7 @@
         var txt = (all[i].textContent || all[i].value || '').trim().toLowerCase();
         if (txt.indexOf('beginne bot-schutz') !== -1 || txt.indexOf('bot-schutz-pr') !== -1 || all[i].closest('.bot-protection-row')) {
           all[i].click();
+          lastInteractionTs = Date.now();
           console.log('[CaptchaSolver] Start-Button (Bot-Schutz) geklickt.');
           return true;
         }
@@ -91,11 +97,31 @@
           return;
         }
       }
+      maybeReloadForBotGuard();
     } catch (e) {
       console.error('[CaptchaSolver] Fehler:', e);
     } finally {
       solving = false;
     }
+  }
+
+  function maybeReloadForBotGuard() {
+    try {
+      var bg = window.DS_BotGuard;
+      if (!bg || !bg.isActive || !bg.isActive()) return;
+      var now = Date.now();
+      if (now - lastReloadTs < RELOAD_COOLDOWN_MS) return;
+      if (now - lastInteractionTs < RELOAD_COOLDOWN_MS) return;
+      var hasCandidate = !!document.querySelector(
+        '#bot-icon, .bot-icon, .bot-protection-blur button, .bot-protection-blur a, .bot-protection-row a, .bot-protection-row button, td.bot-protection-row a, td.bot-protection-row button'
+      );
+      if (hasCandidate) return;
+      lastReloadTs = now;
+      console.log('[CaptchaSolver] Bot-Schutz aktiv ohne Button -> Seite wird neu geladen.');
+      var u = new URL(location.href);
+      u.searchParams.set('_ds_captcha_cb', String(now));
+      location.assign(u.toString());
+    } catch (e) {}
   }
 
   var preStageObserver = null;

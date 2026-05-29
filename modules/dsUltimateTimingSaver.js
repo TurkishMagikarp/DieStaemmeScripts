@@ -5,9 +5,13 @@
   const TABLE_SELECTOR = '#data1'; // ggf. anpassen
   const ARRIVAL_COL_INDEX = 9;     // Spalte "Ankunftszeit"
   const ROW_HIGHLIGHT_TOKEN = 'limegreen'; // wie im Auto-Sender gesetzt
-  const SCAN_MS = 100;             // leichtes Polling
+  const SCAN_MS = 1000;            // Polling (1x/s reicht)
 
   const processed = new Set();
+  const MAX_PROCESSED = 200;
+  function pruneProcessed() {
+    if (processed.size > MAX_PROCESSED) processed.clear();
+  }
 
   function getArrivalStr(tr) {
     const td = tr?.querySelector(`td:nth-child(${ARRIVAL_COL_INDEX})`);
@@ -58,18 +62,39 @@
     storePayload(tr, anchor.href);
   }, true);
 
-  // 2) Auto-Sender: Zeilen-Highlight erkennen und speichern
-  setInterval(() => {
-    const rows = document.querySelectorAll(`${TABLE_SELECTOR} tr[id]`);
-    rows.forEach(tr => {
-      const id = tr.id;
-      if (!id || processed.has(id)) return;
-      const s = (tr.getAttribute('style') || '').toLowerCase();
-      if (s.includes(ROW_HIGHLIGHT_TOKEN)) {
-        const a = findPlaceAnchor(tr);
-        if (a) storePayload(tr, a.href);
-        processed.add(id);
+  // 2) Auto-Sender: Zeilen-Highlight erkennen und speichern (nur wenn #data1 existiert)
+  let _iv = null;
+  function startScan() {
+    if (_iv) return;
+    _iv = setInterval(() => {
+      const rows = document.querySelectorAll(`${TABLE_SELECTOR} tr[id]`);
+      rows.forEach(tr => {
+        const id = tr.id;
+        if (!id || processed.has(id)) return;
+        const s = (tr.getAttribute('style') || '').toLowerCase();
+        if (s.includes(ROW_HIGHLIGHT_TOKEN)) {
+          const a = findPlaceAnchor(tr);
+          if (a) storePayload(tr, a.href);
+          processed.add(id);
+          pruneProcessed();
+        }
+      });
+    }, SCAN_MS);
+  }
+  function stopScan() {
+    if (_iv) { clearInterval(_iv); _iv = null; }
+  }
+
+  // Nur starten wenn #data1 da ist
+  if (document.querySelector(TABLE_SELECTOR)) {
+    startScan();
+  } else {
+    const watch = new MutationObserver(() => {
+      if (document.querySelector(TABLE_SELECTOR)) {
+        startScan();
+        watch.disconnect();
       }
     });
-  }, SCAN_MS);
+    watch.observe(document.body, { childList: true, subtree: true });
+  }
 })();

@@ -44,10 +44,15 @@
         `);
     }
 
-    const wait = setInterval(() => {
-        if (document.getElementById('village_list')) {
-            clearInterval(wait);
-            init();
-        }
-    }, 100);
+    if (document.getElementById('village_list')) {
+        init();
+    } else {
+        const mo = new MutationObserver(() => {
+            if (document.getElementById('village_list')) {
+                mo.disconnect();
+                init();
+            }
+        });
+        mo.observe(document.body, { childList: true, subtree: true });
+    }
 })();

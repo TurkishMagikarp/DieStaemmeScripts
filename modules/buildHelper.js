@@ -22,23 +22,28 @@ function setupConfig() {
     setup('suoc_quest', true)
 }
  
+let _bhInterval = null;
 function startInterval() {
-    setInterval(()=>{
-        if ($('[id*=xd_custom]').length === 0 && $('#build_queue').length !== 0) {
-            updateQue()
-            updateBuildingInfo()
-        } else if ($('#build_queue #xd_custom').length === 0 && $('[id*=xd_custom]').length !== 0) {
-            updateQue()
-        }
-        updateNextBuildBox()
-        updateInactive()
-const firstCustom = $("#xd_custom")[0];
-if (firstCustom && typeof firstCustom.tooltipText !== "string") {
-    $('[id*=xd_custom]').each((i,e)=>UI.ToolTip($(e)));
-}
+    if (_bhInterval) return;
+    _bhInterval = setInterval(()=>{
+        const hasCustom = $('[id*=xd_custom]').length > 0;
+        const hasBuildQueue = $('#build_queue').length > 0;
+        const hasCustomInQueue = $('#build_queue #xd_custom').length > 0;
 
-    }
-    , 1000)
+        if (!hasCustom && hasBuildQueue) {
+            updateQue();
+            updateBuildingInfo();
+        } else if (!hasCustomInQueue && hasCustom) {
+            updateQue();
+        }
+        updateNextBuildBox();
+        updateInactive();
+
+        const firstCustom = $("#xd_custom")[0];
+        if (firstCustom && typeof firstCustom.tooltipText !== "string") {
+            $('[id*=xd_custom]').each((i,e)=>UI.ToolTip($(e)));
+        }
+    }, 3000);
 }
  
 //
@@ -180,7 +185,7 @@ function updateQue() {
         html = e.building.match('storage') ? `<span id="xd_custom" style="color: brown; float: right; margin-right: 0.7em;" data-title="Speicherkapazit\u00e4t"> ${numberWithCommas(getStorage(e.lvl))}</span>` : html
         html = e.building.match('farm') ? `<span id="xd_custom" style="color: blue; float: right; margin-right: 0.7em;" data-title="Maximale Bev\u00f6lkerung"> ${getFarm(e.lvl)}</span>` : html
         html = e.building.match('market') ? `<span id="xd_custom" style="color: blue; float: right; margin-right: 0.7em;" data-title="H\u00e4ndleranzahl"> ${getMarket(e.lvl)}</span>` : html
-        $(tdQue[0]).html(tdQue[0].innerHTML + html)
+        tdQue[0].insertAdjacentHTML('beforeend', html);
     }
     )
     if ($('.btn-instant,.btn-btr,.btn-bcr').length !== 0) {
@@ -189,7 +194,7 @@ function updateQue() {
             let combinedProd = que.filter(index=>index >= i).get().reduce((a,b)=>a + b.resProd, 0)
             let moreRes = Math.round(combinedProd * (e.time / 2 / 3600))
             let html = moreRes !== 0 && !(e.time < 300 && i > 0) ? `<span id="xd_custom" style="color: green;" data-title="zus\u00e4tzliche Rohstoffe produziert bei verk\u00fcrzung und gleichbleibender Bauschleife">+${moreRes}</span>` : ''
-            $(tdQue[2]).html(tdQue[2].innerHTML + html)
+            tdQue[2].insertAdjacentHTML('beforeend', html);
         }
         )
     }
@@ -278,7 +283,7 @@ function updateBuildingInfo() {
                 html = building_name.match('storage') ? `<span id="xd_custom" style="color: brown; float: right; margin-right: 0.7em;" data-title="Speicherkapazit\u00e4t bei Level ${next_lvl}"> ${numberWithCommas(getStorage(next_lvl))}</span>` : html
                 html = building_name.match('farm') ? `<span id="xd_custom" style="color: blue; float: right; margin-right: 0.7em;" data-title="Maximale Bev\u00f6lkerung bei Level ${next_lvl}"> ${getFarm(next_lvl)}</span>` : html
                 html = building_name.match('market') ? `<span id="xd_custom" style="color: blue; float: right; margin-right: 0.7em;" data-title="H\u00e4ndleranzahl bei Level ${next_lvl} \n +${next_lvl !== 0 ? getMarket(next_lvl) - getMarket(next_lvl - 1) : getMarket(next_lvl)} H\u00e4ndler"> ${getMarket(next_lvl)}</span>` : html
-                $(spalten[0]).html(spalten[0].innerHTML + html)
+                spalten[0].insertAdjacentHTML('beforeend', html);
             }
         }
     }
@@ -290,7 +295,7 @@ function updateNextBuildBox() {
     if (!nextBuildCache.pending) {
         fetchNextBuildInfo();
     }
-    if (!incomingCache.pending && (Date.now() - incomingCache.ts > 30000 || !incomingCache.data)) {
+    if (!incomingCache.pending && (Date.now() - incomingCache.ts > 120000 || !incomingCache.data)) {
         fetchIncomingForVillage();
     }
 }

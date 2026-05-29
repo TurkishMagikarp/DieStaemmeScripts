@@ -420,7 +420,8 @@
     });
 
     // Live status updater
-    setInterval(updateUiStatus, 1000);
+    var _uiIv = setInterval(updateUiStatus, 1000);
+    window.addEventListener('beforeunload', function() { clearInterval(_uiIv); });
     updateUiStatus();
   }
 

@@ -279,170 +279,81 @@
         <span id="count" class="label">0/${names.length}</span>
         <div id="progress"><span id="count2" class="label" style="width: ${width}px;">0/${names.length}</span></div>
         </div>`);
-        //ODA
-        $.getAll(linksODA, (i, data) => {
+        // Parallelisiere alle $.getAll-Aufrufe
+        function getAllPromise(urls) {
+            return new Promise((resolve, reject) => {
+                if (!urls.length) { resolve([]); return; }
+                const results = [];
+                let done = 0;
+                $.getAll(urls,
+                    (i, data) => { results[i] = data; },
+                    () => resolve(results),
+                    (err) => reject(err)
+                );
+            });
+        }
+
+        function parsePlayerData(data) {
             if ($(data).find(".lit-item")[3] != undefined) {
-                temp = $(data).find(".lit-item")
-                ODAperPlayer.push([temp[3].innerText.replace(/\./g, ','), temp[4].innerText]);
+                const items = $(data).find(".lit-item");
+                return [items[3].innerText.replace(/\./g, ','), items[4].innerText];
             }
-            else {
-                ODAperPlayer.push(["0", "Never"]);
-            }
+            return ["0", "Never"];
+        }
 
-        },
-            () => {
-                $("#progress").css("width", `${(linksODA.length) / linksODA.length * 100}%`);
-                for (var o = rowStart; o < ODAperPlayer.length + rowStart; o++) {
-                    $(tribeTable + " tr").eq(o).append("<td title=" + ODAperPlayer[o - rowStart][1] + ">" + ODAperPlayer[o - rowStart][0] + "</td>")
+        function parseTotalData(data) {
+            if ($(data).find(".lit-item")[3] != undefined) {
+                const items = $(data).find(".lit-item");
+                let val = items[3].innerText;
+                if (val.indexOf(" Mil.") > -1) {
+                    val = val.replace(" Mil.", "").replace(",", "");
+                    val = (parseInt(val) * 10000).toString();
                 }
-                //ODD
-                $.getAll(linksODD, (i, data) => {
-                    if ($(data).find(".lit-item")[3] != undefined) {
-                        temp = $(data).find(".lit-item")
-                        ODDperPlayer.push([temp[3].innerText.replace(/\./g, ','), temp[4].innerText]);
-                    }
-                    else {
-                        ODDperPlayer.push(["0", "Never"]);
-                    }
+                return val.replace(/\./g, ',');
+            }
+            return "0";
+        }
 
-                },
-                    () => {
-                        for (var o = rowStart; o < ODDperPlayer.length + rowStart; o++) {
-                            $(tribeTable + " tr").eq(o).append("<td title=" + ODDperPlayer[o - rowStart][1] + ">" + ODDperPlayer[o - rowStart][0] + "</td>")
-                        }
-                        //ODS
-                        $.getAll(linksODS, (i, data) => {
-                            if ($(data).find(".lit-item")[3] != undefined) {
-                                temp = $(data).find(".lit-item")
-                                ODSperPlayer.push([temp[3].innerText.replace(/\./g, ','), temp[4].innerText]);
-                            }
-                            else {
-                                ODSperPlayer.push(["0", "Never"]);
-                            }
+        Promise.all([
+            getAllPromise(linksODA).then(res => { ODAperPlayer = res.map(parsePlayerData); }),
+            getAllPromise(linksODD).then(res => { ODDperPlayer = res.map(parsePlayerData); }),
+            getAllPromise(linksODS).then(res => { ODSperPlayer = res.map(parsePlayerData); }),
+            getAllPromise(linksLoot).then(res => { lootperPlayer = res.map(parsePlayerData); }),
+            getAllPromise(linksGathering).then(res => { gatheredperPlayer = res.map(parsePlayerData); }),
+            getAllPromise(linksODATotal).then(res => { ODATotalperPlayer = res.map(parseTotalData); }),
+            getAllPromise(linksODDTotal).then(res => { ODDTotalperPlayer = res.map(parseTotalData); }),
+            getAllPromise(linksODSTotal).then(res => { ODSTotalperPlayer = res.map(parseTotalData); }),
+        ]).then(() => {
+            // DOM-Updates (sequentiell, aber schnell)
+            for (var o = rowStart; o < ODAperPlayer.length + rowStart; o++)
+                $(tribeTable + " tr").eq(o).append("<td title=" + ODAperPlayer[o - rowStart][1] + ">" + ODAperPlayer[o - rowStart][0] + "</td>");
+            for (var o = rowStart; o < ODDperPlayer.length + rowStart; o++)
+                $(tribeTable + " tr").eq(o).append("<td title=" + ODDperPlayer[o - rowStart][1] + ">" + ODDperPlayer[o - rowStart][0] + "</td>");
+            for (var o = rowStart; o < ODSperPlayer.length + rowStart; o++)
+                $(tribeTable + " tr").eq(o).append("<td title=" + ODSperPlayer[o - rowStart][1] + ">" + ODSperPlayer[o - rowStart][0] + "</td>");
+            for (var o = rowStart; o < lootperPlayer.length + rowStart; o++)
+                $(tribeTable + " tr").eq(o).append("<td title=" + lootperPlayer[o - rowStart][1] + ">" + lootperPlayer[o - rowStart][0] + "</td>");
+            for (var o = rowStart; o < gatheredperPlayer.length + rowStart; o++) {
+                $(tribeTable + " tr").eq(o).append("<td title=" + gatheredperPlayer[o - rowStart][1] + ">" + gatheredperPlayer[o - rowStart][0] + "</td>");
+                if (statsEnabled["Loot"] && statsEnabled["Gathering"]) {
+                    $(tribeTable + " tr").eq(o).append("<td>" + numberWithCommas(parseInt(gatheredperPlayer[o - rowStart][0].split(",").join("")) + parseInt(lootperPlayer[o - rowStart][0].split(",").join(""))) + "</td>");
+                } else if (statsEnabled["Combined"]) {
+                    $(tribeTable + " tr").eq(o).append("<td>Need both Loot and Gathering enabled to see this column</td>");
+                }
+            }
+            for (var o = rowStart; o < ODATotalperPlayer.length + rowStart; o++)
+                $(tribeTable + " tr").eq(o).append("<td>" + numberWithCommas(ODATotalperPlayer[o - rowStart]) + "</td>");
+            for (var o = rowStart; o < ODDTotalperPlayer.length + rowStart; o++)
+                $(tribeTable + " tr").eq(o).append("<td>" + numberWithCommas(ODDTotalperPlayer[o - rowStart]) + "</td>");
+            for (var o = rowStart; o < ODSTotalperPlayer.length + rowStart; o++)
+                $(tribeTable + " tr").eq(o).append("<td>" + numberWithCommas(ODSTotalperPlayer[o - rowStart]) + "</td>");
 
-                        },
-                            () => {
-                                for (var o = rowStart; o < ODSperPlayer.length + rowStart; o++) {
-                                    $(tribeTable + " tr").eq(o).append("<td title=" + ODSperPlayer[o - rowStart][1] + ">" + ODSperPlayer[o - rowStart][0] + "</td>")
-                                }
-
-                                //loot
-                                $.getAll(linksLoot, (i, data) => {
-                                    if ($(data).find(".lit-item")[3] != undefined) {
-                                        temp = $(data).find(".lit-item")
-                                        lootperPlayer.push([temp[3].innerText.replace(/\./g, ','), temp[4].innerText]);
-                                    }
-                                    else {
-                                        lootperPlayer.push(["0", "Never"]);
-                                    }
-
-                                },
-                                    () => {
-                                        for (var o = rowStart; o < lootperPlayer.length + rowStart; o++) {
-                                            $(tribeTable + " tr").eq(o).append("<td title=" + lootperPlayer[o - rowStart][1] + ">" + lootperPlayer[o - rowStart][0] + "</td>")
-                                        }
-                                        //gathering
-                                        $.getAll(linksGathering, (i, data) => {
-                                            if ($(data).find(".lit-item")[3] != undefined) {
-                                                temp = $(data).find(".lit-item")
-                                                gatheredperPlayer.push([temp[3].innerText.replace(/\./g, ','), temp[4].innerText]);
-                                            }
-                                            else {
-                                                gatheredperPlayer.push(["0", "Never"]);
-                                            }
-
-                                        },
-                                            () => {
-                                                for (var o = rowStart; o < gatheredperPlayer.length + rowStart; o++) {
-                                                    $(tribeTable + " tr").eq(o).append("<td title=" + gatheredperPlayer[o - rowStart][1] + ">" + gatheredperPlayer[o - rowStart][0] + "</td>")
-                                                    //only show combined if loot and gathering are collected
-                                                    if (statsEnabled["Loot"] == true && statsEnabled["Gathering"] == true) {
-                                                        $(tribeTable + " tr").eq(o).append("<td>" + numberWithCommas(parseInt(gatheredperPlayer[o - rowStart][0].split(",").join("")) + parseInt(lootperPlayer[o - rowStart][0].split(",").join(""))) + "</td>")
-                                                    }
-                                                    else {
-                                                        if (statsEnabled["Combined"] == true)
-                                                            $(tribeTable + " tr").eq(o).append("<td>Need both Loot and Gathering enabled to see this column</td>")
-                                                    }
-                                                }
-                                                // ODA total
-                                                $.getAll(linksODATotal, (i, data) => {
-                                                    if ($(data).find(".lit-item")[3] != undefined) {
-                                                        temp = $(data).find(".lit-item")
-                                                        x = temp[3].innerText;
-                                                        console.log(x);
-                                                        if (x.indexOf(" Mil.") > -1) {
-                                                            x = x.replace(" Mil.", "");
-                                                            x = x.replace(",", "");
-                                                            x = parseInt(x) * 10000;
-                                                            x=x.toString();
-                                                        }
-                                                        ODATotalperPlayer.push(x.replace(/\./g, ','));
-                                                    }
-                                                    else {
-                                                        ODATotalperPlayer.push("0");
-                                                    }
-
-                                                },
-                                                    () => {
-                                                        for (var o = rowStart; o < ODATotalperPlayer.length + rowStart; o++) {
-                                                            $(tribeTable + " tr").eq(o).append("<td>" + numberWithCommas(ODATotalperPlayer[o - rowStart]) + "</td>")
-                                                        }
-
-                                                        // ODD total
-                                                        $.getAll(linksODDTotal, (i, data) => {
-                                                            if ($(data).find(".lit-item")[3] != undefined) {
-                                                                temp = $(data).find(".lit-item")
-                                                                x = temp[3].innerText;
-                                                                console.log(x);
-                                                                if (x.indexOf(" Mil.") > -1) {
-                                                                    x = x.replace(" Mil.", "");
-                                                                    x = x.replace(",", "");
-                                                                    x = parseInt(x) * 10000;
-                                                                    x=x.toString();
-                                                                }
-                                                                ODDTotalperPlayer.push(x.replace(/\./g, ','));
-                                                            }
-                                                            else {
-                                                                ODDTotalperPlayer.push("0");
-                                                            }
-
-                                                        },
-                                                            () => {
-                                                                for (var o = rowStart; o < ODDTotalperPlayer.length + rowStart; o++) {
-                                                                    $(tribeTable + " tr").eq(o).append("<td>" + numberWithCommas(ODDTotalperPlayer[o - rowStart]) + "</td>")
-                                                                }
-
-                                                                // ODS total
-                                                                $.getAll(linksODSTotal, (i, data) => {
-                                                                    if ($(data).find(".lit-item")[3] != undefined) {
-                                                                        temp = $(data).find(".lit-item")
-                                                                        x = temp[3].innerText;
-                                                                        console.log(x);
-                                                                        if (x.indexOf(" Mil.") > -1) {
-                                                                            x = x.replace(" Mil.", "");
-                                                                            x = x.replace(",", "");
-                                                                            x = parseInt(x) * 10000;
-                                                                            x=x.toString();
-                                                                        }
-                                                                        ODSTotalperPlayer.push(x.replace(/\./g, ','));
-                                                                    }
-                                                                    else {
-                                                                        ODSTotalperPlayer.push("0");
-                                                                    }
-
-                                                                },
-                                                                    () => {
-                                                                        for (var o = rowStart; o < ODSTotalperPlayer.length + rowStart; o++) {
-                                                                            $(tribeTable + " tr").eq(o).append("<td>" + numberWithCommas(ODSTotalperPlayer[o - rowStart]) + "</td>")
-                                                                        }
-
-                                                                        $("#progressbar").remove();
-                                                                        
-                                                                        sortTableTest(columnStart);
-                                                                    },
-                                                                    (error) => {
-                                                                        console.error(error);
-                                                                    });
+            $("#progressbar").remove();
+            sortTableTest(columnStart);
+        }).catch((error) => {
+            console.error(error);
+            $("#progressbar").remove();
+        });
 
 
 

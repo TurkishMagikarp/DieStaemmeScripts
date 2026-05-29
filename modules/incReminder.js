@@ -29,26 +29,22 @@
     let sending = false;
 
     /* =========================
-     * 💾 SENT VALUE CACHE
+     * 💾 SENT VALUE CACHE (single value statt Array)
      * ========================= */
-    function getSentValues() {
+    function getLastSent() {
         try {
-            return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+            return JSON.parse(localStorage.getItem(STORAGE_KEY));
         } catch {
-            return [];
+            return null;
         }
     }
 
     function markAsSent(value) {
-        const list = getSentValues();
-        if (!list.includes(value)) {
-            list.push(value);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-        }
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
     }
 
     function wasSent(value) {
-        return getSentValues().includes(value);
+        return getLastSent() === value;
     }
 
     /* =========================
@@ -132,11 +128,8 @@
     /* =========================
      * 🚀 BOOTSTRAP
      * ========================= */
-    const wait = setInterval(() => {
-        if (window.DS_USER_SETTINGS) {
-            clearInterval(wait);
-            startInterval();
-        }
-    }, 100);
+    if (window.DS_USER_SETTINGS) {
+        startInterval();
+    }
 
 })();

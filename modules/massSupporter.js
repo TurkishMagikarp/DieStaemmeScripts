@@ -54,7 +54,7 @@
       }
     };
 
-    function onKey(e) {
+    const onKey = (e) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const key = (e.key || "").toLowerCase();
       const isS = key === "s" || e.code === "KeyS" || e.which === 83;
@@ -72,11 +72,21 @@
           UI?.ErrorMessage?.("MassSupporter Fehler – Details in der Konsole.");
         }
       }
-    }
+    };
 
-    // breit binden, um Konflikte zu umgehen
-    document.addEventListener("keydown", onKey, { capture: true });
-    document.addEventListener("keypress", onKey, { capture: true });
+    document.addEventListener("keydown", onKey);
+
+    // Cleanup beim Schließen
+    const _origMain = main;
+    main = async function() {
+      await _origMain.apply(this, arguments);
+      const closeBtn = document.getElementById("btn_close_ui");
+      if (closeBtn) {
+        closeBtn.addEventListener("click", () => {
+          document.removeEventListener("keydown", onKey);
+        }, { once: true });
+      }
+    };
   })();
 
   // ---------------------------
@@ -278,51 +288,6 @@
     $('#btn_calculate').off('click').on('click', countTotalTroops);
     $('#btn_fill_inputs').off('click').on('click', fillInputs);
   }
-
-function addEvents(){
-    // $('.sendTroops').off('input')
-    $('.sendTroops').on('input',function(e){
-        let sendTotal=document.getElementsByClassName("sendTroops")
-        let totalPop=0;
-        for(let i=0;i<sendTotal.length;i++){
-            let id=sendTotal[i].id
-            let value=(sendTotal[i].value=="")?0:sendTotal[i].value
-    
-            if(id.includes("spear") || id.includes("sword") || id.includes("archer")){
-                totalPop+=parseFloat(value)*1000
-            }
-            if(id.includes("heavy")){
-                totalPop+=parseFloat(value)*1000*heavyCav
-            }
-        }
-        document.getElementById("packets_send").value=(totalPop/1000).toFixed(2)
-    
-    });
-    // $('.packets_send').off('input')
-    $('#packets_send').on('input',function(e){
-        let needTroops=parseFloat(document.getElementById("packets_send").value)
-        let totalPop =parseFloat(document.getElementById("packets_total").value)
-        let sendTotal=document.getElementsByClassName("sendTroops")
-        let totalTroops=document.getElementsByClassName("totalTroops")
-
-        console.log(needTroops)
-        console.log(totalPop)
-        let ratio = needTroops/totalPop
-        console.log(ratio)
-        for(let i=0;i<totalTroops.length;i++){
-            let id=sendTotal[i].id
-            if(!id.includes("spy")){
-                sendTotal[i].value= parseInt(parseFloat(totalTroops[i].value)*ratio*100)/100.0
-            }
-            else{
-                sendTotal[i].value=0
-            }
-        }
-
-
-    
-    });
-}
 
 
 

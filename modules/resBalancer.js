@@ -251,6 +251,10 @@ async function balancingResources() {
   const nrClusters = Math.max(1, rbRead("nr_clusters", 1));
   const merchantCapacity = rbRead("merchant_capacity", 1000);
   const maxConstruction = rbRead("maximize_construction", false);
+  const includeIncoming = rbRead("include_incoming", true);
+  const cutAtValue = rbRead("cut_at_value", 0);
+  const avoidSendingAttacked = rbRead("avoid_sending_attacked", false);
+  const avoidReceivingAttacked = rbRead("avoid_receiving_attacked", false);
 
   console.log("RB SETTINGS", {
     time_construction_total,
@@ -357,7 +361,7 @@ async function balancingResources() {
 
   for (let i = 0; i < list_production.length; i++) {
     let coord = list_production[i].coord;
-    if (map_incoming.has(coord)) {
+    if (includeIncoming && map_incoming.has(coord)) {
       list_production[i].wood += map_incoming.get(coord).wood;
       list_production[i].stone += map_incoming.get(coord).stone;
       list_production[i].iron += map_incoming.get(coord).iron;
@@ -375,6 +379,12 @@ async function balancingResources() {
         list_production[i].iron,
         list_production[i].capacity
       );
+    }
+    // cut_at_value: begrenze Bestand pro Ressource
+    if (cutAtValue > 0) {
+      list_production[i].wood = Math.min(list_production[i].wood, cutAtValue);
+      list_production[i].stone = Math.min(list_production[i].stone, cutAtValue);
+      list_production[i].iron = Math.min(list_production[i].iron, cutAtValue);
     }
     avg_wood_total += list_production[i].wood / list_production.length;
     avg_stone_total += list_production[i].stone / list_production.length;
@@ -806,7 +816,7 @@ function calculateLaunches(
 
       // console.log("total_res_available",total_res_available)
       let norm_factor =
-        capacity_travel <= total_res_available
+        capacity_travel <= total_res_available && total_res_available > 0
           ? capacity_travel / total_res_available
           : 1; //normalize to the number of merchant available
       let send_wood = 0,
@@ -1431,7 +1441,7 @@ function getDataIncoming() {
 
 function httpGet(theUrl) {
   var xmlHttp = new XMLHttpRequest();
-  xmlHttp.open("GET", theUrl, false); // false for synchronous request
+  xmlHttp.open("GET", theUrl, false);
   xmlHttp.send(null);
   return xmlHttp.responseText;
 }
@@ -1691,6 +1701,7 @@ function createTableResults(list_production) {
       greenColorEven = "#026440"; //green
     let redColor = "#5f0000",
       redColorEven = "#9a0000"; //red
+    let header_status_wood, header_status_stone, header_status_iron;
 
     if (i % 2 != 0) {
       header_status_wood =
@@ -1937,6 +1948,10 @@ async function getResourcesForAM(map_farm_usage) {
   let time_construction_total = 100;
   let list_map_resources_get_AM = [];
 
+  let map_buildings_data_cloned = new Map(
+    JSON.parse(JSON.stringify(Array.from(map_buildings_data.entries())))
+  );
+
   return new Promise((resolve, reject) => {
     for (
       let current_time_construction = 1;
@@ -1944,9 +1959,7 @@ async function getResourcesForAM(map_farm_usage) {
       current_time_construction++
     ) {
       let map_resources_get_AM = new Map();
-      let map_buildings = new Map(
-        JSON.parse(JSON.stringify(Array.from(map_buildings_data.entries())))
-      );
+      let map_buildings = new Map(map_buildings_data_cloned);
 
       //add construction time for each building
       Array.from(map_buildings.keys()).forEach((key) => {
@@ -2082,6 +2095,7 @@ function getTemplates() {
         map_construction_templates: new Map(),
         map_priortize_farm: new Map(),
       });
+      return;
     }
 
     let link_combined_production = game_data.link_base_pure + "am_village";

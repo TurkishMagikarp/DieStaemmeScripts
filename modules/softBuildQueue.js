@@ -181,11 +181,12 @@
   }
   injectTwins();
 
-  // Keep twins alive if DOM changes
-  var moTwins = new MutationObserver(function(){
+  // Keep twins alive + promote when DOM changes (kombinierter Observer)
+  var moWrap = new MutationObserver(function(){
     try { injectTwins(); } catch(e){ warn('injectTwins() failed:', e); }
+    try { tryPromote(); } catch(e){ warn('tryPromote() failed:', e); }
   });
-  moTwins.observe(wrap, { childList:true, subtree:true });
+  moWrap.observe(wrap, { childList:true, subtree:true });
 
   // ---------- RENDERER ----------
   var renderScheduled = false;
@@ -338,14 +339,16 @@ for (var c = 0; c < cancels.length; c++) {
     setTimeout(function(){ promoteLock = false; }, 700);
   }
 
-  // observe main wrapper to react to enable/disable of buttons
-  var moPromote = new MutationObserver(function(){
-    try { tryPromote(); } catch(e){ warn('tryPromote() failed:', e); }
-  });
-  moPromote.observe(wrap, { childList:true, subtree:true });
-
-  var iv = setInterval(function(){ try { tryPromote(); } catch(e){ warn('tryPromote interval failed:', e); } }, 1800);
-  window.addEventListener('beforeunload', function(){ try { clearInterval(iv); } catch(_){ } });
+  var iv = null;
+  function startPromoteInterval() {
+    if (iv) return;
+    iv = setInterval(function(){ try { tryPromote(); } catch(e){ warn('tryPromote interval failed:', e); } }, 3000);
+  }
+  function stopPromoteInterval() {
+    if (iv) { clearInterval(iv); iv = null; }
+  }
+  startPromoteInterval();
+  window.addEventListener('beforeunload', stopPromoteInterval);
 
   // ---------- STYLE ----------
   var style = document.createElement('style');

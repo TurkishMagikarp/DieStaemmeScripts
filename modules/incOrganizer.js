@@ -236,10 +236,18 @@
   }
 
   /*****************************************************************
-   * OBSERVER + INIT
+   * OBSERVER + INIT (gezielt auf #commands_incomings + Debounce)
    *****************************************************************/
-  const observer = new MutationObserver(() => scan());
-  observer.observe(document.body, { childList: true, subtree: true });
+  function debounce(fn, ms) {
+    let t;
+    return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
+  }
 
+  const target = document.getElementById('commands_incomings') || document.getElementById('incomings_table');
+  if (target) {
+    const debouncedScan = debounce(scan, 150);
+    const observer = new MutationObserver(() => debouncedScan());
+    observer.observe(target, { childList: true, subtree: true });
+  }
   scan();
 })();

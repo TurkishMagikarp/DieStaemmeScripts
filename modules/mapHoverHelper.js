@@ -24,9 +24,19 @@
   function savePref(p){ localStorage.setItem(PREF_KEY, JSON.stringify(p)); }
   const pref = loadPref();
 
-  function cacheKey(coord){ return `ds_last_report_${WORLD}_${coord}`; }
+  const CACHE_PREFIX = `ds_last_report_${WORLD}_`;
+  const MAX_CACHE = 200;
+  function cacheKey(coord){ return CACHE_PREFIX + coord; }
   function getCache(coord){ try{ return JSON.parse(localStorage.getItem(cacheKey(coord))||'null'); }catch{ return null; } }
-  function setCache(coord, data){ localStorage.setItem(cacheKey(coord), JSON.stringify({...data, ts: Date.now()})); }
+  function setCache(coord, data){
+    localStorage.setItem(cacheKey(coord), JSON.stringify({...data, ts: Date.now()}));
+    // prune: keep newest MAX_CACHE entries
+    const keys = Object.keys(localStorage).filter(k => k.startsWith(CACHE_PREFIX));
+    if (keys.length > MAX_CACHE) {
+      keys.sort((a,b) => (JSON.parse(localStorage.getItem(a)||'{}').ts||0) - (JSON.parse(localStorage.getItem(b)||'{}').ts||0));
+      keys.slice(0, keys.length - MAX_CACHE).forEach(k => localStorage.removeItem(k));
+    }
+  }
 
   function parseCoord(s){ const m=String(s||'').match(/(\d{3})\|(\d{3})/); return m?`${m[1]}|${m[2]}`:null; }
 
@@ -60,6 +70,16 @@
   const inFlightPreview = new Map();   // id    -> Promise<string HTML>
   const missCooldown    = new Map();   // coord -> timestamp
   const MISS_COOLDOWN_MS = 60_000;
+  const MAX_MISS = 100;
+  function pruneMissCooldown() {
+    const now = Date.now();
+    if (missCooldown.size > MAX_MISS) {
+      for (const [coord, ts] of missCooldown) {
+        if (ts < now) missCooldown.delete(coord);
+      }
+    }
+    if (missCooldown.size > MAX_MISS * 2) missCooldown.clear();
+  }
 
   function reportsListURL(){
     const gid = pref.group_id ? `&group_id=${encodeURIComponent(pref.group_id)}` : '';
@@ -93,7 +113,7 @@
         onerror: () => resolve(null),
         ontimeout: () => resolve(null),
       });
-    }).then(r => { if (!r) missCooldown.set(coordStr, Date.now()+MISS_COOLDOWN_MS); return r; });
+    }).then(r => { if (!r) { missCooldown.set(coordStr, Date.now()+MISS_COOLDOWN_MS); pruneMissCooldown(); } return r; });
 
     inFlightSearch.set(coordStr, p);
     p.finally(()=>inFlightSearch.delete(coordStr));

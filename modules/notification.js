@@ -142,13 +142,19 @@
   }
 
   function observeClose(boxId, onClosed) {
-    const obs = new MutationObserver(() => {
-      if (!document.getElementById(boxId)) {
-        obs.disconnect();
-        onClosed();
-      }
-    });
-    obs.observe(document.body, { childList: true, subtree: true });
+    let obs = null;
+    const check = setInterval(() => {
+      const box = document.getElementById(boxId);
+      if (!box) return;
+      clearInterval(check);
+      obs = new MutationObserver(() => {
+        if (!document.getElementById(boxId)) {
+          obs.disconnect();
+          onClosed();
+        }
+      });
+      obs.observe(box.parentNode || document.body, { childList: true });
+    }, 200);
   }
 
   function showViaDialog(onClosed) {

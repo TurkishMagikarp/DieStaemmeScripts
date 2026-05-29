@@ -347,17 +347,20 @@
         return html;
     }
 
+    var _renderCache = '';
     function render() {
         try {
             var container = document.getElementById('content_value') || document.querySelector('td#content_value') || document.body;
             var existing = document.getElementById('tkk-queue');
+            var content = buildQueueContent();
+            if (existing && _renderCache === content) return;
 
             if (existing) {
-                existing.innerHTML = buildQueueContent();
+                existing.innerHTML = content;
             } else {
                 var div = document.createElement('div');
                 div.id = 'tkk-queue';
-                div.innerHTML = buildQueueContent();
+                div.innerHTML = content;
                 var target = container.querySelector('table');
                 if (target && target.parentNode) {
                     target.parentNode.insertBefore(div, target.nextSibling);
@@ -365,6 +368,7 @@
                     container.appendChild(div);
                 }
             }
+            _renderCache = content;
         } catch (e) {
             console.error('[BuildBot] render error:', e);
         }

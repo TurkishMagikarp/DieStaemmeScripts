@@ -129,14 +129,21 @@
   function startPreStageWatcher() {
     if (preStageObserver) return;
     var throttle = 0;
+    var clickCount = 0;
     preStageObserver = new MutationObserver(function () {
       var now = Date.now();
       if (now - throttle < CHECK_INTERVAL_MS) return;
       throttle = now;
       if (solving) return;
-      clickPreStage();
+      if (clickPreStage()) {
+        clickCount++;
+        if (clickCount >= 3) {
+          preStageObserver.disconnect();
+          preStageObserver = null;
+        }
+      }
     });
-    preStageObserver.observe(document.documentElement, { childList: true, subtree: true, attributes: true });
+    preStageObserver.observe(document.body, { childList: true, subtree: true });
   }
 
   function startDomWatcher() {

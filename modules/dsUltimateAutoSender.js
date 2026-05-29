@@ -178,6 +178,13 @@ function storeCommandType(tr) {
 
   const fired = new Set();
   const lastSeenSec = new Map();
+  const MAX_TRACKED = 300;
+  function pruneTracked() {
+    if (fired.size > MAX_TRACKED) fired.clear();
+    if (lastSeenSec.size > MAX_TRACKED) lastSeenSec.clear();
+    if (openedTabs.size > MAX_TRACKED) openedTabs.clear();
+    if (tokenToRow.size > MAX_TRACKED) tokenToRow.clear();
+  }
   const nowMs = () => Date.now();
 
   function getRows() {
@@ -202,6 +209,13 @@ function storeCommandType(tr) {
   // TAB CLOSE SUPPORT
   const openedTabs = new Map();
   const tokenToRow = new Map();
+  const MAX_TRACKED = 300;
+  function pruneTracked() {
+    if (fired.size > MAX_TRACKED) fired.clear();
+    if (lastSeenSec.size > MAX_TRACKED) lastSeenSec.clear();
+    if (openedTabs.size > MAX_TRACKED) openedTabs.clear();
+    if (tokenToRow.size > MAX_TRACKED) tokenToRow.clear();
+  }
 
   function markRowAsSent(rowId) {
     if (!rowId) return;
@@ -253,7 +267,7 @@ function storeCommandType(tr) {
       ? GM_openInTab(url, { active: true, insert: true, setParent: true })
       : window.open(url, "_blank", "noopener,noreferrer");
 
-    if (handle) openedTabs.set(token, handle);
+    if (handle) { openedTabs.set(token, handle); pruneTracked(); }
   }
 
 
@@ -264,9 +278,11 @@ function storeCommandType(tr) {
     if (!a) return;
 
     fired.add(rowId);
+    pruneTracked();
 
     const token = `auto_${rowId}_${Date.now()}`;
     tokenToRow.set(token, rowId);
+    pruneTracked();
 
     // NEW (MINIMAL): commandType für autoSender speichern
     storeCommandType(tr);
@@ -295,6 +311,7 @@ function storeCommandType(tr) {
     const prev = lastSeenSec.get(rowId);
     if (prev === undefined) {
       lastSeenSec.set(rowId, secLeft);
+      pruneTracked();
       return;
     }
 
@@ -303,6 +320,7 @@ function storeCommandType(tr) {
     }
 
     lastSeenSec.set(rowId, secLeft);
+    pruneTracked();
   }
 
 

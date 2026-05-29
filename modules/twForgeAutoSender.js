@@ -39,6 +39,14 @@
   const lastSeenSec = new Map();
   const openedTabs = new Map();
   const tokenToRow = new Map();
+  const MAX_TRACKED = 300;
+  function pruneTracked() {
+    if (fired.size > MAX_TRACKED) fired.clear();
+    if (armed.size > MAX_TRACKED) armed.clear();
+    if (lastSeenSec.size > MAX_TRACKED) lastSeenSec.clear();
+    if (openedTabs.size > MAX_TRACKED) openedTabs.clear();
+    if (tokenToRow.size > MAX_TRACKED) tokenToRow.clear();
+  }
 
   function nowMs() {
     return Date.now();
@@ -236,7 +244,7 @@
       ? GM_openInTab(url, { active: true, insert: true, setParent: true })
       : window.open(url, "_blank", "noopener,noreferrer");
 
-    if (handle) openedTabs.set(token, handle);
+    if (handle) { openedTabs.set(token, handle); pruneTracked(); }
   }
 
   function clickNativeSendButton(tr, token) {
@@ -251,7 +259,7 @@
         opened = true;
         const patchedUrl = withAutoParams(url, token);
         const handle = originalOpen.call(window, patchedUrl, target, features);
-        if (handle) openedTabs.set(token, handle);
+        if (handle) { openedTabs.set(token, handle); pruneTracked(); }
         return handle;
       };
 
@@ -333,6 +341,7 @@
 
     fired.add(rowKey);
     tokenToRow.set(token, rowKey);
+    pruneTracked();
     await storeHandoffPayload(tr, sourceId, targetId, commandType);
     const openedByNativeButton = clickNativeSendButton(tr, token);
     if (!openedByNativeButton) {
@@ -362,11 +371,13 @@
         armed.add(rowKey);
       }
       lastSeenSec.set(rowKey, secLeft);
+      pruneTracked();
     } else {
       if (prev > triggerSec && secLeft <= triggerSec && secLeft > 0) {
         armed.add(rowKey);
       }
       lastSeenSec.set(rowKey, secLeft);
+      pruneTracked();
     }
 
     // Fire immediately once armed and still > 0s left.

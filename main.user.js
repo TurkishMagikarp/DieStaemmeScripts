@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TurkishMagikarps Die Stämme Tool Collection
 // @namespace    https://github.com/TurkishMagikarp
-// @version      3.7.5
+// @version      3.8.0
 // @description  Erweitert die Die Stämme Erfahrung mit einigen Tools und Skripten
 // @author       TurkishMagikarp (original: Speckmich)
 // @connect      raw.githubusercontent.com
@@ -108,10 +108,9 @@
       t = now;
       emit(anyVisible());
     });
-    mo.observe(D.documentElement, {
+    mo.observe(D.body, {
       childList: true,
       subtree: true,
-      attributes: true,
     });
 
     // React to other tabs

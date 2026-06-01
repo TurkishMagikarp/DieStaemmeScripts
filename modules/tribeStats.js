@@ -78,7 +78,7 @@
                 "ODA": "BGA",
                 "ODD": "BGV",
                 "ODS": "BGU",
-                "Loot": "GeplÃ¼ndert",
+                "Loot": "Geplündert",
                 "Gathered": "Gesammelt",
                 "Combined": "Insgesamt ",
                 "ODATotal": "ODA TOTAL",
@@ -108,7 +108,7 @@
         columnName = 0;
         rows = $($("table .vis")[2]).find('tr');
     }
-    if (window.location.href.indexOf('&screen=info_ally') > -1) {
+    if (window.location.href.indexOf('screen=info_ally') > -1) {
         //any tribe
         tribeTable = ".vis:eq(" + (2 + $(".bbcodetable").length) + ")";
         rowStart = 1;
@@ -192,39 +192,6 @@
     }
 
     function getData() {
-
-  console.log("collecting data");
-  $("#getData").prop('disabled', true);
-
-  // save checkboxes...
-  for (var i = 0; i < Object.keys(statsEnabled).length; i++) {
-    statsEnabled[Object.keys(statsEnabled)[i]] = $(`:checkbox#${Object.keys(statsEnabled)[i]}`).is(":checked");
-  }
-  localStorage.setItem("tribeStatsEnabled", JSON.stringify(statsEnabled));
-
-  // ✅ declare everything you use
-  let linksODS = [];
-  let linksODD = [];
-  let linksODA = [];
-  let linksODSTotal = [];
-  let linksODDTotal = [];
-  let linksODATotal = [];
-  let linksLoot = [];
-  let linksGathering = [];
-
-  let ODSperPlayer = [];
-  let ODDperPlayer = [];
-  let ODAperPlayer = [];
-  let ODSTotalperPlayer = [];
-  let ODDTotalperPlayer = [];
-  let ODATotalperPlayer = [];
-  let lootperPlayer = [];
-  let gatheredperPlayer = [];
-
-  let temp, x;
-  let titleCount = 0;
-
-
         console.log("collecting data")
         $("#getData").prop('disabled', true);
         //save checkboxes to localstorage
@@ -235,22 +202,22 @@
         }
         localStorage.setItem("tribeStatsEnabled", JSON.stringify(statsEnabled));
 
-        linksODS = [];
-        linksODD = [];
-        linksODA = [];
-        linksODSTotal = [];
-        linksODDTotal = [];
-        linksODATotal = [];
-        linksLoot = [];
-        linksGathering = [];
-        ODSperPlayer = [];
-        ODDperPlayer = [];
-        ODAperPlayer = [];
-        ODSTotalperPlayer = [];
-        ODDTotalperPlayer = [];
-        ODATotalperPlayer = [];
-        lootperPlayer = [];
-        gatheredperPlayer = [];
+        let linksODS = [];
+        let linksODD = [];
+        let linksODA = [];
+        let linksODSTotal = [];
+        let linksODDTotal = [];
+        let linksODATotal = [];
+        let linksLoot = [];
+        let linksGathering = [];
+        let ODSperPlayer = [];
+        let ODDperPlayer = [];
+        let ODAperPlayer = [];
+        let ODSTotalperPlayer = [];
+        let ODDTotalperPlayer = [];
+        let ODATotalperPlayer = [];
+        let lootperPlayer = [];
+        let gatheredperPlayer = [];
         for (var i = 0; i < names.length; i++) {
             if (statsEnabled.ODA) linksODA.push("/game.php?screen=ranking&mode=in_a_day&type=kill_att&name=" + names[i]);
             if (statsEnabled.ODD) linksODD.push("/game.php?screen=ranking&mode=in_a_day&type=kill_def&name=" + names[i]);
@@ -261,7 +228,7 @@
             if (statsEnabled.ODDTotal) linksODDTotal.push("/game.php?screen=ranking&mode=kill_player&type=def&name=" + names[i]);
             if (statsEnabled.ODSTotal) linksODSTotal.push("/game.php?screen=ranking&mode=kill_player&type=support&name=" + names[i]);
         }
-        titleCount = 0;
+        let titleCount = 0;
         for (var i = 0; i < Object.keys(statsEnabled).length; i++) {
             if (statsEnabled[Object.keys(statsEnabled)[i]]) {
                 $(tribeTable + " tr").eq(rowStart - 1).append("<th onclick='sortTableTest(" + (columnStart + titleCount) + ")'>" + langShinko[Object.keys(langShinko)[i]] + "</th>");
@@ -354,44 +321,6 @@
             console.error(error);
             $("#progressbar").remove();
         });
-
-
-
-                                                            },
-                                                            (error) => {
-                                                                console.error(error);
-                                                            });
-
-
-                                                    },
-                                                    (error) => {
-                                                        console.error(error);
-                                                    });
-
-                                            },
-                                            (error) => {
-                                                console.error(error);
-                                            });
-                                    },
-                                    (error) => {
-                                        console.error(error);
-                                    });
-                            },
-                            (error) => {
-                                console.error(error);
-                            });
-
-                    },
-                    (error) => {
-                        console.error(error);
-                    });
-
-
-
-            },
-            (error) => {
-                console.error(error);
-            });
     }
 
     function sortTableTest(n) {

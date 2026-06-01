@@ -326,6 +326,14 @@
         "compliance": "legal"
       }
     ],
+    "ally": {
+      "url": "modules/tribeStats.js",
+      "id": "tribeStats",
+      "title": "Stammes-Übersicht: Statistiken",
+      "desc": "Erlaubt das berechnen von Kennzahlen auf einer Stammes-Übersichts-Seite.",
+      "defaultEnabled": true,
+      "compliance": "legal"
+    },
     "info_ally": {
       "url": "modules/tribeStats.js",
       "id": "tribeStats",

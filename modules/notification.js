@@ -85,23 +85,27 @@
     return ("0000000" + h.toString(16)).slice(-8);
   }
 
-  const TOKEN = String(POPUP.id); // <-- nur diese ID entscheidet
-  const STORE_KEY = "dsTools.notification.lastSeenId";
+  const TOKEN = String(POPUP.id);
+  const STORE_KEY_LS = "dsTools.notification.lastSeenId";
+  const STORE_KEY_GM = "dsTools.notification.lastSeenId";
 
-  async function getSeenToken() {
+  function getSeenToken() {
     try {
-      return await GM.getValue(STORE_KEY, "");
-    } catch {
-      return localStorage.getItem(STORE_KEY) || "";
-    }
+      const ls = localStorage.getItem(STORE_KEY_LS);
+      if (ls) return ls;
+    } catch {}
+    return "";
   }
 
-  async function setSeenToken(token) {
+  function setSeenToken(token) {
     try {
-      await GM.setValue(STORE_KEY, token);
-    } catch {
-      localStorage.setItem(STORE_KEY, token);
-    }
+      localStorage.setItem(STORE_KEY_LS, token);
+    } catch {}
+    try {
+      if (typeof GM !== "undefined" && GM.setValue) {
+        GM.setValue(STORE_KEY_GM, token).catch(() => {});
+      }
+    } catch {}
   }
 
   function buildInnerHtml() {
@@ -230,12 +234,10 @@
     wrap.querySelector("#ds_notif_ok")?.addEventListener("click", close);
   }
 
-  async function run() {
-    if (!POPUP.enabled) {
-      return;
-    }
+  function run() {
+    if (!POPUP.enabled) return;
 
-    const seen = await getSeenToken();
+    const seen = getSeenToken();
     LOG("version=", SCRIPT_VERSION, "seenToken=", seen);
 
     if (seen === TOKEN) {
@@ -243,10 +245,10 @@
       return;
     }
 
-    const onClosed = async () => {
-      await setSeenToken(TOKEN);
+    function onClosed() {
+      setSeenToken(TOKEN);
       LOG("marked as seen:", TOKEN);
-    };
+    }
 
     const ok = showViaDialog(onClosed);
     if (!ok) showViaPopupDiv(onClosed);

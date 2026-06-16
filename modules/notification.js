@@ -145,37 +145,22 @@
     `;
   }
 
-  function observeClose(boxId, onClosed) {
-    let obs = null;
-    const check = setInterval(() => {
-      const box = document.getElementById(boxId);
-      if (!box) return;
-      clearInterval(check);
-      obs = new MutationObserver(() => {
-        if (!document.getElementById(boxId)) {
-          obs.disconnect();
-          onClosed();
-        }
-      });
-      obs.observe(box.parentNode || document.body, { childList: true });
-    }, 200);
-  }
-
-  function showViaDialog(onClosed) {
+  function showViaDialog() {
     if (typeof Dialog?.show !== "function") return false;
 
     const name = "ds_tools_notification";
     Dialog.show(name, buildInnerHtml());
 
     const boxId = `popup_box_${name}`;
-    observeClose(boxId, onClosed);
 
-    // OK-Button -> Dialog schließen
+    // Token sofort beim OK-Klick speichern — TW entfernt das Dialog-Element
+    // oft nicht aus dem DOM (nur hide), daher feuert der MutationObserver nie.
     const handler = (ev) => {
       const t = ev.target;
       if (t && t.id === "ds_notif_ok") {
         ev.preventDefault();
-        // close button exists in TW dialogs
+        setSeenToken(TOKEN);
+        LOG("marked as seen:", TOKEN);
         const closeBtn = document.querySelector(`#${boxId} .popup_box_close`);
         if (closeBtn) closeBtn.click();
         else document.getElementById(boxId)?.remove();
@@ -183,16 +168,10 @@
     };
     document.addEventListener("click", handler, true);
 
-    // cleanup wenn geschlossen
-    observeClose(boxId, () => {
-      document.removeEventListener("click", handler, true);
-      onClosed();
-    });
-
     return true;
   }
 
-  function showViaPopupDiv(onClosed) {
+  function showViaPopupDiv() {
     const id = "ds_notification_popup";
     if (document.getElementById(id)) return;
 
@@ -224,8 +203,9 @@
 
     const close = (ev) => {
       ev?.preventDefault?.();
+      setSeenToken(TOKEN);
+      LOG("marked as seen:", TOKEN);
       wrap.remove();
-      onClosed();
     };
 
     wrap
@@ -245,13 +225,8 @@
       return;
     }
 
-    function onClosed() {
-      setSeenToken(TOKEN);
-      LOG("marked as seen:", TOKEN);
-    }
-
-    const ok = showViaDialog(onClosed);
-    if (!ok) showViaPopupDiv(onClosed);
+    const ok = showViaDialog();
+    if (!ok) showViaPopupDiv();
   }
 
   run();
